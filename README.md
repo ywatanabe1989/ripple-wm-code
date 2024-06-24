@@ -1,4 +1,3 @@
-# siEEGRipple (scalpe and intracranial EEG data and Ripples)
 ## Hippocampal neural fluctuation between memory encoding and retrieval states during a working memory task in humans
 
 #### [Installation](./docs/installation.md)
