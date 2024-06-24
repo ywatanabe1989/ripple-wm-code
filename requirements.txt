@@ -1,0 +1,9 @@
+# mngs==1.4.0
+h5py
+##
+xarray
+neo
+quantities
+elephant
+imblearn
+scikit-posthocs
