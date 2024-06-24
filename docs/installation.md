@@ -1,7 +1,7 @@
 ## Installation
 
 <details>
-<summary>#### Installation of GIN Client</summary>
+<summary>Installation of GIN Client</summary>
 
 ``` bash
 install-gin-client() {
@@ -63,7 +63,7 @@ install-git-annex-using-cabal() {
 </details>
 
 <details>
-<summary>#### Installation of Python packages</summary>
+<summary>Installation of Python packages</summary>
 
 ``` bash
 git clone git@github.com:ywatanabe1989/siEEG_ripple.git && cd siEEG_ripple
@@ -82,7 +82,7 @@ echo "export PYTHONPATH=.:$PYTHONPATH" >> ~/.bashrc
 
 
 <details>
-<summary>#### Downloading of the dataset by Boran et al., 2020</summary>
+<summary>Downloading of the dataset by Boran et al., 2020</summary>
 
 ## Downloads the original .h5 files using gin
 
@@ -105,7 +105,7 @@ screen -dmS download_Boran_et_al bash -c "$(declare -f download_h5_files); downl
 
 
 <details>
-<summary>#### Softlink to the h5 data</summary>
+<summary>Softlink to the h5 data</summary>
 
 ```bash
 cd data
