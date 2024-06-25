@@ -1,5 +1,7 @@
 ### Source: /home/ywatanabe/.git-templates/.gitignore-templates/Custom/Specific.gitignore ###
 # Please add files here
+**/202?Y-??M-??D-*
+./scripts/externals/
 
 ### Source: /home/ywatanabe/.git-templates/.gitignore-templates/Custom/Secrets.gitignore ###
 .git-crypt/keys
@@ -564,3 +566,4 @@ flycheck_*.el
 
 # network security
 /network-security.data
+scripts/externals/mngs
