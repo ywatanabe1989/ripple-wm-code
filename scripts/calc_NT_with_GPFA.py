@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-05-28 16:52:59 (ywatanabe)"
+# Time-stamp: "2024-06-25 22:19:01 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
@@ -96,13 +96,15 @@ def main(match="all", without_retrieval_phase=False):
     BIN_SIZE = CONFIG["GPFA_BIN_SIZE_MS"] * pq.ms
 
     # Loads spike timings
-    LPATHs = natsorted(glob("./data/Sub_*/Session_*/spike_times/*.pkl"))
+    LPATHs = mngs.gen.natglob("./data/Sub_*/Session_*/spike_times/*.pkl")
 
     for lpath in LPATHs:
 
         subject, session, roi = parse_lpath(lpath)
 
-        # Spike trains of all trials; some of spike trains data are unavailable in the original datset.
+        # Spike trains of all trials;
+        # some of spike trains data are unavailable in the original datset.
+
         lpath_spike_times = (
             f"./data/Sub_{subject}/Session_{session}/spike_times/{roi}.pkl"
         )
