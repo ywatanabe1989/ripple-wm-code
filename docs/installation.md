@@ -66,13 +66,15 @@ install-git-annex-using-cabal() {
 <summary>Installation of Python packages</summary>
 
 ``` bash
-git clone git@github.com:ywatanabe1989/siEEG_ripple.git && cd siEEG_ripple
+git clone git@github.com:ywatanabe1989/ripple-wm-code.git && cd ripple-wm-code
 python -m venv env && source ./env/bin/activate
 pip install -U pip && pip install -r requirements.txt
 
 # External scripts
 mkdir -p ./scripts/externals/ && cd ./scripts/externals/
-git clone git@github.com:ywatanabe1989/mngs.git && pip install -e ./mngs # for development
+git clone git@github.com:ywatanabe1989/mngs.git && cd mngs && git checkout develop
+python -m pip install -Ue ./scripts/externals/mngs # mngs v1.5.5
+
 
 # Adds current directory in PYTHONPATH
 echo "export PYTHONPATH=.:$PYTHONPATH" >> ~/.bashrc
