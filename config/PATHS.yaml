@@ -2,3 +2,11 @@ SUB_DIR:
   ./data/Sub_XX/
 SESSION_DIR:
   ./data/Sub_XX/Session_YY/
+
+
+
+PATH_TRIALS_INFO:
+  f"./data/Sub_{sub}/Session_{session}/trials_info.csv"
+
+PATH_SPIKE_TIMES:
+  f"./data/Sub_{subject}/Session_{session}/spike_times/{roi}.pkl"
