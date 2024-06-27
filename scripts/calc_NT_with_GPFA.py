@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-25 22:51:06 (ywatanabe)"
+# Time-stamp: "2024-06-26 10:26:07 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 

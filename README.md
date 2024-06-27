@@ -19,6 +19,21 @@ find data -name '*NT*' | xargs rm -rf
 ./scripts/znorm_NT.py
 ```
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #### Wavelet transformation
 
 ``` bash
