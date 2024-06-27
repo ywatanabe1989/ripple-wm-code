@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-05-28 17:18:54 (ywatanabe)"
-
-from glob import glob
+# Time-stamp: "2024-06-26 11:16:02 (ywatanabe)"
 
 import mngs
 
 
 def main():
 
-    LPATHS_NT = glob(f"./data/Sub_0?/Session_0?/NT/*.npy")
+    LPATHS_NT = mngs.gen.natglob(f"./data/Sub_0?/Session_0?/NT/*.npy")
 
     by = ["by_trial", "by_session"]
 
@@ -19,7 +17,8 @@ def main():
                 NT = mngs.io.load(lpath_nt)
                 dim = 0 if by == "by_session" else -1
                 NT_z = mngs.gen.to_z(NT, dim=dim)
-                mngs.io.save(NT_z, lpath_nt.replace(".npy", f"_z_{_by}.npy"))
+                lpath_z = lpath_nt.replace(".npy", f"_z_{_by}.npy")
+                mngs.io.save(NT_z, lpath_z, from_cwd=True)
 
 
 if __name__ == "__main__":

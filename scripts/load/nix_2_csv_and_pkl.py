@@ -64,18 +64,18 @@ def main():
                 .replace("YY", f"{session}")
             )
 
-            mngs.io.save(meta_df, session_dir + f"meta.csv", from_git=True)
+            mngs.io.save(meta_df, session_dir + f"meta.csv", from_cwd=True)
             mngs.io.save(
-                trials_info, session_dir + f"trials_info.csv", from_git=True
+                trials_info, session_dir + f"trials_info.csv", from_cwd=True
             )
             mngs.io.save(
-                iEEG, session_dir + f"iEEG/{iEEG_ROI}.pkl", from_git=True
+                iEEG, session_dir + f"iEEG/{iEEG_ROI}.pkl", from_cwd=True
             )
-            mngs.io.save(EEG, session_dir + f"EEG.pkl", from_git=True)
+            mngs.io.save(EEG, session_dir + f"EEG.pkl", from_cwd=True)
             mngs.io.save(
                 spike_times,
                 session_dir + f"spike_times/{iEEG_ROI}.pkl",
-                from_git=True,
+                from_cwd=True,
             )
 
 

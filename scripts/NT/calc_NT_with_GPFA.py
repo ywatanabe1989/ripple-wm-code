@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-05-28 16:52:59 (ywatanabe)"
+# Time-stamp: "2024-06-26 10:26:07 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
@@ -59,14 +59,21 @@ def spiketimes_to_spiketrains(
     return spike_trains_all_trials
 
 
+# def parse_lpath(lpath):
+#     subject = re.findall("Sub_[\w]{2}", lpath)[0][-2:]
+#     session = re.findall("Session_[\w]{2}", lpath)[0][-2:]
+#     roi = (
+#         re.findall("spike_times/[\w]{2,3}.pkl", lpath)[0]
+#         .split("spike_times/")[-1]
+#         .split(".pkl")[0]
+#     )
+#     return subject, session, roi
+
+
 def parse_lpath(lpath):
-    subject = re.findall("Sub_[\w]{2}", lpath)[0][-2:]
-    session = re.findall("Session_[\w]{2}", lpath)[0][-2:]
-    roi = (
-        re.findall("spike_times/[\w]{2,3}.pkl", lpath)[0]
-        .split("spike_times/")[-1]
-        .split(".pkl")[0]
-    )
+    subject = re.findall(r"Sub_(\w{2})", lpath)[0]
+    session = re.findall(r"Session_(\w{2})", lpath)[0]
+    roi = re.findall(r"spike_times/(\w{2,3})\.pkl", lpath)[0]
     return subject, session, roi
 
 
@@ -96,22 +103,26 @@ def main(match="all", without_retrieval_phase=False):
     BIN_SIZE = CONFIG["GPFA_BIN_SIZE_MS"] * pq.ms
 
     # Loads spike timings
-    LPATHs = natsorted(glob("./data/Sub_*/Session_*/spike_times/*.pkl"))
+    LPATHs = mngs.gen.natglob("./data/Sub_*/Session_*/spike_times/*.pkl")
 
     for lpath in LPATHs:
 
         subject, session, roi = parse_lpath(lpath)
 
-        # Spike trains of all trials; some of spike trains data are unavailable in the original datset.
-        lpath_spike_times = (
-            f"./data/Sub_{subject}/Session_{session}/spike_times/{roi}.pkl"
-        )
+        # Spike trains of all trials;
+        # some of spike trains data are unavailable in the original datset.
+        lpath_spike_times = eval(CONFIG["PATH_SPIKE_TIMES"])
         spike_times_all_trials = mngs.io.load(lpath_spike_times)
+        # lpath_spike_times = (
+        #     f"./data/Sub_{subject}/Session_{session}/spike_times/{roi}.pkl"
+        # )
+        # spike_times_all_trials = mngs.io.load(lpath_spike_times)
 
         spike_trains = spiketimes_to_spiketrains(
             spike_times_all_trials,
             without_retrieval_phase=without_retrieval_phase,
         )
+
         spike_trains = switch_regarding_match(
             spike_trains, subject, session, match
         )
@@ -125,7 +136,7 @@ def main(match="all", without_retrieval_phase=False):
             spath_NTs = determine_spath(
                 lpath_spike_times, match, without_retrieval_phase
             )
-            mngs.io.save(NTs, spath_NTs, from_git=True)
+            mngs.io.save(NTs, spath_NTs, from_cwd=True)
 
         except Exception as e:
             print(
