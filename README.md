@@ -14,7 +14,9 @@
 
 #### Detects ripples
 ```bash
-./scripts/ripple/detect_ripples.py
+./scripts/ripple/detect_SWR+.py
+# ./scripts/ripple/define_SWR-.py
+# ./scripts/ripple/UMAP_for_defining_putative_CA1.py
 ```
 
 #### Calculates neural trajectory (NT) with GPFA

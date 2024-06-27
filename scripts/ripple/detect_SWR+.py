@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-25 20:22:40 (ywatanabe)"
+# Time-stamp: "2024-06-27 20:50:37 (ywatanabe)"
 # detect_ripples.py
 
 
@@ -23,7 +23,7 @@ pd.set_option("future.no_silent_downcasting", True)
 import itertools
 
 import torch
-from scripts import utils
+from scripts import load
 
 # from scripts.externals.ripple_detection.ripple_detection.detectors import (
 #     Kay_ripple_detector,
@@ -82,7 +82,7 @@ def detect_ripples_roi(sub, session, sd, iEEG_roi):
     # )
 
     # koko
-    iEEG, iEEG_common_ave = utils.load.iEEG(
+    iEEG, iEEG_common_ave = load.iEEG(
         sub, session, iEEG_roi, return_common_averaged_signal=True
     )
     # iEEG.shape # (50, 8, 16000)
@@ -139,6 +139,9 @@ def detect_ripples_roi(sub, session, sd, iEEG_roi):
 
     rip_df["subject"] = sub
     rip_df["session"] = session
+
+    # Drops rows with NaN values
+    rip_df = rip_df[~rip_df.isna().any(axis=1)]
 
     return rip_df
 

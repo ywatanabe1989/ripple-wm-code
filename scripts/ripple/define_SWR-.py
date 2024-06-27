@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-27 19:33:13 (ywatanabe)"
+# Time-stamp: "2024-06-27 20:10:06 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -57,6 +57,9 @@ Functions & Classes
 
 
 def main():
+    mngs.gen.natglob(f"./data/rips_df/{iEEG_roi_connected}.pkl")
+    rips_df = mngs.io.load(f"./data/rips_df/{iEEG_roi_connected}.pkl")
+
     pass
 
 

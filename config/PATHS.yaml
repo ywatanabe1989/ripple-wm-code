@@ -12,3 +12,6 @@ PATH_SPIKE_TIMES:
 
 PATH_iEEG:
   f"./data/Sub_{subject}/Session_{session}/iEEG/{roi}.pkl"
+
+PATH_RIPPLE:
+  f"./data/rips_df/{roi}.pkl"
