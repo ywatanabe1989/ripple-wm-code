@@ -4,7 +4,6 @@ SESSION_THRES:
 FIRST_TWO_SESSIONS:
   ["01", "02"]
 
-
 SWR_BINS:
   "pre":
     [-16, -5]
@@ -12,6 +11,3 @@ SWR_BINS:
     [-5, 6]
   "post":
     [6, 17]
-
-SUBJECTS:
-  ["01", "02", "03", "04", "05", "06", "07", "08", "09"]

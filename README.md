@@ -7,6 +7,13 @@
 ./scripts/load/nix_2_csv_and_pkl.py
 ```
 
+
+#### Demographic data
+```bash
+./scripts/demographic/
+```
+
+
 #### Detects ripples
 ```bash
 ./scripts/ripple/detect_ripples.py
@@ -18,6 +25,7 @@ find data -name '*NT*' | xargs rm -rf
 ./scripts/NT/calc_NT_with_GPFA.py
 ./scripts/NT/znorm_NT.py
 ```
+
 
 
 
