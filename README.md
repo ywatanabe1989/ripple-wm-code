@@ -7,12 +7,10 @@
 ./scripts/load/nix_2_csv_and_pkl.py
 ```
 
-
 #### Demographic data
 ```bash
-./scripts/demographic/
+./scripts/demographic/fetch_demographic_data.py
 ```
-
 
 #### Detects ripples
 ```bash
