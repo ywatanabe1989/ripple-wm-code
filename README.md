@@ -1,23 +1,27 @@
-## Hippocampal neural fluctuation between memory encoding and retrieval states during a working memory task in humans
+## Code of --- "Hippocampal neural fluctuation between memory encoding and retrieval states during a working memory task in humans"
 
-#### [Installation](./docs/installation.md)
+#### [Installation and download](./docs/installation.md)
 
-#### Converts the downloaded .h5 files into csv and pkl files
+#### Converts the .h5 files into csv and pkl files
 ```bash
-./scripts/utils/load/nix_2_csv_and_pkl.py
+./scripts/load/nix_2_csv_and_pkl.py
 ```
 
 #### Detects ripples
 ```bash
-./scripts/detect_ripples.py
+./scripts/ripple/detect_ripples.py
 ```
 
 #### Calculates neural trajectory (NT) with GPFA
 ```bash
 find data -name '*NT*' | xargs rm -rf
-./scripts/calc_NT_with_GPFA.py
-./scripts/znorm_NT.py
+./scripts/NT/calc_NT_with_GPFA.py
+./scripts/NT/znorm_NT.py
 ```
+
+
+
+
 
 
 
