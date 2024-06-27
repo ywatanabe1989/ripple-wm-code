@@ -79,6 +79,3 @@ find data -name '*NT*' | xargs rm -rf
 ```
 
 
-please tell me useful commands to handle singularity sandbox
-
-
