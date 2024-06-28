@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-28 08:42:12 (ywatanabe)"
+# Time-stamp: "2024-06-28 16:28:16 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
@@ -160,5 +160,12 @@ if __name__ == "__main__":
     )
     main(match="all", without_retrieval_phase=False)
     mngs.gen.close(CONFIG, verbose=False, notify=True)
+
+
+# for f in `find /mnt/ssd/ripple-wm-code/scripts/NT/calc_NT_with_GPFA/data -type f -name "*.npy"`; do
+#     echo $f
+#     tgt=$(echo $f | sed 's|/mnt/ssd/ripple-wm-code/scripts/NT/calc_NT_with_GPFA/||')
+#     ln -sfr $f $tgt
+# done
 
 # EOF

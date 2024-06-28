@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-28 08:42:57 (ywatanabe)"
+# Time-stamp: "2024-06-28 16:17:08 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -58,21 +58,28 @@ Functions & Classes
 
 def main():
     LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
+    LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
     lpath = LPATHS_RIPPLE[0]
     df = mngs.io.load(lpath)
 
     __import__("ipdb").set_trace()
 
-
     print(LPATHS_RIPPLE)
+
     for lpath in LPATHS_RIPPLE:
         df_plus = mngs.io.load(lpath)
 
         df_plus[["subject", "session"]].drop_duplicates()
 
-
         df_minus = df_plus.copy()
-        cols_to_del = ["peak_s", "rel_peak_pos", "peak_amp_sd", "incidence_hz", "set_size", "match"]
+        cols_to_del = [
+            "peak_s",
+            "rel_peak_pos",
+            "peak_amp_sd",
+            "incidence_hz",
+            "set_size",
+            "match",
+        ]
         df_minus["peak_s"] = np.nan
         df_minus["rel_peak_pos"] = np.nan
 
