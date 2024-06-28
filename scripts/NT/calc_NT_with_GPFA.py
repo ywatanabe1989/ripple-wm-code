@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-26 10:26:07 (ywatanabe)"
+# Time-stamp: "2024-06-28 08:42:12 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
@@ -107,7 +107,7 @@ def main(match="all", without_retrieval_phase=False):
 
     for lpath in LPATHs:
 
-        subject, session, roi = parse_lpath(lpath)
+        sub, session, roi = parse_lpath(lpath)
 
         # Spike trains of all trials;
         # some of spike trains data are unavailable in the original datset.
@@ -124,7 +124,7 @@ def main(match="all", without_retrieval_phase=False):
         )
 
         spike_trains = switch_regarding_match(
-            spike_trains, subject, session, match
+            spike_trains, sub, session, match
         )
 
         # GPFA calculation

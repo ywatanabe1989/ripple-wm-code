@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-27 20:10:06 (ywatanabe)"
+# Time-stamp: "2024-06-28 08:42:57 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -48,7 +48,7 @@ Warnings
 """
 Config
 """
-# CONFIG = mngs.gen.load_configs()
+CONFIG = mngs.gen.load_configs()
 
 
 """
@@ -57,8 +57,29 @@ Functions & Classes
 
 
 def main():
-    mngs.gen.natglob(f"./data/rips_df/{iEEG_roi_connected}.pkl")
-    rips_df = mngs.io.load(f"./data/rips_df/{iEEG_roi_connected}.pkl")
+    LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
+    lpath = LPATHS_RIPPLE[0]
+    df = mngs.io.load(lpath)
+
+    __import__("ipdb").set_trace()
+
+
+    print(LPATHS_RIPPLE)
+    for lpath in LPATHS_RIPPLE:
+        df_plus = mngs.io.load(lpath)
+
+        df_plus[["subject", "session"]].drop_duplicates()
+
+
+        df_minus = df_plus.copy()
+        cols_to_del = ["peak_s", "rel_peak_pos", "peak_amp_sd", "incidence_hz", "set_size", "match"]
+        df_minus["peak_s"] = np.nan
+        df_minus["rel_peak_pos"] = np.nan
+
+        print()
+
+    __import__("ipdb").set_trace()
+    # rips_df = mngs.io.load(f"./data/rips_df/{iEEG_roi_connected}.pkl")
 
     pass
 
