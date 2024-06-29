@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-28 16:43:56 (ywatanabe)"
+# Time-stamp: "2024-06-28 16:48:36 (ywatanabe)"
 
 import mngs
 
@@ -9,8 +9,7 @@ CONFIG = mngs.io.load_configs()
 
 def main():
 
-    LPATHS_NT = mngs.gen.natglob(f"./data/Sub_0?/Session_0?/NT/*.npy")
-    mngs.gen.natglob(CONFIG["PATH_NT"])
+    LPATHS_NT = mngs.gen.natglob(CONFIG["PATH_NT"])
 
     by = ["by_trial", "by_session"]
 

@@ -20,4 +20,7 @@ PATH_RIPPLE:
   f"./data/rips_df/{roi}.pkl"
 
 PATH_NT:
-  f"./data/Sub_{sub}/Session_{session}/NT/{roi}.pkl"
+  f"./data/Sub_{sub}/Session_{session}/NT/{roi}.npy"
+
+PATH_NT_z:
+  f"./data/Sub_{sub}/Session_{session}/NT/{roi}_z_by_session.npy"
