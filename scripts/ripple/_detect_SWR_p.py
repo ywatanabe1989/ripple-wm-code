@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-29 17:36:11 (ywatanabe)"
+# Time-stamp: "2024-06-29 16:15:56 (ywatanabe)"
 # ./scripts/ripple/detect_SWR_p.py
 
 
@@ -24,7 +24,10 @@ import itertools
 
 import torch
 from scripts import load
-from scripts.utils import parse_lpath
+
+# from scripts.externals.ripple_detection.ripple_detection.detectors import (
+#     Kay_ripple_detector,
+# )
 from tqdm import tqdm
 
 """
@@ -36,6 +39,27 @@ CONFIG = mngs.gen.load_configs()
 """
 Functions & Classes
 """
+
+
+def calc_iou(a, b):
+    """
+    Calculate Intersection over Union
+    a = [0, 10]
+    b = [0, 3]
+    calc_iou(a, b) # 0.3
+    """
+    (a_s, a_e) = a
+    (b_s, b_e) = b
+
+    a_len = a_e - a_s
+    b_len = b_e - b_s
+
+    abx_s = max(a_s, b_s)
+    abx_e = min(a_e, b_e)
+
+    abx_len = max(0, abx_e - abx_s)
+
+    return abx_len / (a_len + b_len - abx_len)
 
 
 def detect_ripples_roi(sub, session, sd, roi):
@@ -54,7 +78,7 @@ def detect_ripples_roi(sub, session, sd, roi):
     )
 
     iEEG, _ = load.iEEG(sub, session, roi, return_common_averaged_signal=True)
-    xx = iEEG
+    xx = iEEG  # alias
 
     # Fake dataframe for no channels data
     if xx.shape[1] == 0:
@@ -92,8 +116,6 @@ def detect_ripples_roi(sub, session, sd, roi):
 
 
 def transfer_metadata(df_r, trials_info):
-    df_r.index.name = "trial_number"
-
     # Transfer information to the dataframe
     transfer_keys = [
         "set_size",
@@ -125,11 +147,114 @@ def add_phase(df_r):
     return df_r
 
 
+# def plot_traces(FS_iEEG):
+#     plt.close()
+#     plot_start_sec = 0
+#     plot_dur_sec = 8
+
+#     plot_dur_pts = plot_dur_sec * FS_iEEG
+#     plot_start_pts = plot_start_sec * FS_iEEG
+
+#     i_ch = np.random.randint(iEEG_ripple_band_passed.shape[1])
+#     i_trial = 0
+
+#     fig, axes = plt.subplots(2, 1, sharex=True)
+#     lw = 1
+
+#     time_iEEG = (np.arange(iEEG.shape[-1]) / FS_iEEG) - 6
+
+#     axes[0].plot(
+#         time_iEEG[plot_start_pts : plot_start_pts + plot_dur_pts],
+#         iEEG[0][i_ch, plot_start_pts : plot_start_pts + plot_dur_pts],
+#         linewidth=lw,
+#         label="Raw LFP",
+#     )
+
+#     axes[1].plot(
+#         time_iEEG[plot_start_pts : plot_start_pts + plot_dur_pts],
+#         iEEG_ripple_band_passed[0][
+#             i_ch, plot_start_pts : plot_start_pts + plot_dur_pts
+#         ],
+#         linewidth=lw,
+#         label="Ripple-band-passed LFP",
+#     )
+#     # fills ripple time
+#     rip_plot_df = df_r[
+#         (df_r["trial_number"] == i_trial + 1)
+#         & (plot_start_sec < df_r["start_s"])
+#         & (df_r["end_s"] < plot_start_sec + plot_dur_sec)
+#     ]
+
+#     for ax in axes:
+#         for ripple in rip_plot_df.itertuples():
+#             ax.axvspan(
+#                 ripple.start_s - 6,
+#                 ripple.end_s - 6,
+#                 alpha=0.1,
+#                 color="red",
+#                 zorder=1000,
+#             )
+#             ax.axvline(x=-5, color="gray", linestyle="dotted")
+#             ax.axvline(x=-3, color="gray", linestyle="dotted")
+#             ax.axvline(x=0, color="gray", linestyle="dotted")
+
+#     axes[-1].set_xlabel("Time from probe [sec]")
+
+#     # plt.show()
+#     mngs.io.save(
+#         plt, "./tmp/ripple_repr_traces_sub_01_session_01_trial_01-50.png"
+#     )
+
+
+# def plot_hist(df_r):
+#     plt.close()
+#     df_r["dur_time"] = df_r["end_s"] - df_r["start_s"]
+#     df_r["dur_ms"] = df_r["dur_time"] * 1000
+
+#     plt.hist(df_r["dur_ms"], bins=100)
+#     plt.xlabel("Ripple duration [sec]")
+#     plt.ylabel("Count of ripple events")
+#     # plt.show()
+#     mngs.io.save(plt, "./tmp/ripple_count_sub_01_session_01_trial_01-50.png")
+
+
+# def calc_rip_incidence_hz(df_r):
+#     df_r["n"] = 1
+#     rip_incidence_hz = pd.concat(
+#         [
+#             df_r[df_r["phase"] == "Fixation"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 1,
+#             df_r[df_r["phase"] == "Encoding"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 2,
+#             df_r[df_r["phase"] == "Maintenance"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 3,
+#             df_r[df_r["phase"] == "Retrieval"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 2,
+#         ],
+#         axis=1,
+#     ).fillna(0)
+#     rip_incidence_hz.columns = [
+#         "Fixation",
+#         "Encoding",
+#         "Maintenance",
+#         "Retrieval",
+#     ]
+#     return rip_incidence_hz
+
+
 def detect_ripples_all():
     for roi in CONFIG["iEEG_ROIS"]:
         mngs.gen.print_block(roi)
 
-        roi_connected = mngs.general.connect_strs([roi])
+        roi_connected = mngs.general.connect_strs([roi])  # For multiple ROIs
 
         rips_df = []
         for sub, session in itertools.product(
@@ -153,67 +278,7 @@ def detect_ripples_all():
         )
 
 
-def main_lpath(lpath):
-    """
-    LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
-    lpath = LPATHS_iEEG[0]
-    """
-    # Parsing variables from lpath
-    parsed = parse_lpath(lpath)
-    sub = parsed["sub"]
-    session = parsed["session"]
-    roi = parsed["roi"]
-
-    # Loading
-    iEEG = xx = mngs.io.load(lpath)
-
-    # Returns fake dataframe as ripple data for no channels data
-    if xx.shape[1] == 0:
-        fake_df = pd.DataFrame(
-            columns=["start_s", "end_s"],
-            data=np.array([[np.nan, np.nan]]),
-        )
-        return fake_df
-
-    # Main
-    df_r, xx_r, fs_r = mngs.dsp.detect_ripples(
-        xx,
-        CONFIG["FS_iEEG"],
-        CONFIG["RIPPLE_LOW_HZ"],
-        CONFIG["RIPPLE_HIGH_HZ"],
-        return_preprocessed_signal=True,
-    )
-
-    # Drops rows with NaN values due to the fake insertion
-    df_r = df_r[~df_r.isna().any(axis=1)]
-
-    # Adds metadata to the ripple table
-    trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
-    df_r = transfer_metadata(df_r, trials_info)
-    df_r["subject"] = sub
-    df_r["session"] = session
-
-    # Saving
-    # Ripple
-    spath_ripple = eval(CONFIG["PATH_RIPPLE"])
-    mngs.io.save(df_r, spath_ripple, from_cwd=True, dry_run=False)
-    # Ripple-band iEEG data
-    spath_ripple_band_iEEG = eval(CONFIG["PATH_iEEG"]).replace(
-        "iEEG", "iEEG_ripple_preprocessed"
-    )
-    mngs.io.save(
-        (xx_r, fs_r),
-        spath_ripple_band_iEEG,
-        from_cwd=True,
-        dry_run=False,
-    )
-
-
-def main():
-    LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
-    for lpath in LPATHS_iEEG:
-        main_lpath(lpath)
-
+main = detect_ripples_all
 
 if __name__ == "__main__":
     # # Argument Parser

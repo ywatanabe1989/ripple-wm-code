@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-28 16:17:08 (ywatanabe)"
+# Time-stamp: "2024-06-29 16:14:10 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -58,9 +58,11 @@ Functions & Classes
 
 def main():
     LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
-    LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
     lpath = LPATHS_RIPPLE[0]
     df = mngs.io.load(lpath)
+    __import__("ipdb").set_trace()
+    #
+    mngs.gen.natglob(CONFIG["PATH_iEEG_RIPPLE_BAND"])
 
     __import__("ipdb").set_trace()
 
