@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-29 17:36:11 (ywatanabe)"
+# Time-stamp: "2024-06-29 23:54:43 (ywatanabe)"
 # ./scripts/ripple/detect_SWR_p.py
 
 
@@ -20,12 +20,10 @@ import numpy as np
 import pandas as pd
 
 pd.set_option("future.no_silent_downcasting", True)
-import itertools
 
-import torch
-from scripts import load
+
+from scripts.load import load_iEEG
 from scripts.utils import parse_lpath
-from tqdm import tqdm
 
 """
 Config
@@ -38,57 +36,58 @@ Functions & Classes
 """
 
 
-def detect_ripples_roi(sub, session, sd, roi):
-    """
-    1) take the common averaged signal of ROI
-    2) detect ripples from the signals of ROI and the common averaged signal
-    3) drop ROI ripples based on IoU
-    """
-    global iEEG, iEEG_ripple_band_passed
+# def detect_ripples_roi(sub, session, sd, roi):
+#     """
+#     1) take the common averaged signal of ROI
+#     2) detect ripples from the signals of ROI and the common averaged signal
+#     3) drop ROI ripples based on IoU
+#     """
+#     global iEEG, iEEG_ripple_band_passed
 
-    trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
+#     trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
 
-    # trials_info["set_size"]
-    trials_info["correct"] = trials_info["correct"].replace(
-        {0: False, 1: True}
-    )
+#     # trials_info["set_size"]
+#     trials_info["correct"] = trials_info["correct"].replace(
+#         {0: False, 1: True}
+#     )
 
-    iEEG, _ = load.iEEG(sub, session, roi, return_common_averaged_signal=True)
-    xx = iEEG
+#     iEEG, _ = load_iEEG(sub, session, roi, return_common_averaged_signal=True)
+#     __import__("ipdb").set_trace()
+#     xx = iEEG
 
-    # Fake dataframe for no channels data
-    if xx.shape[1] == 0:
-        fake_df = pd.DataFrame(
-            columns=["start_s", "end_s"],
-            data=np.array([[np.nan, np.nan]]),
-        )
-        return fake_df
+#     # Fake dataframe for no channels data
+#     if xx.shape[1] == 0:
+#         fake_df = pd.DataFrame(
+#             columns=["start_s", "end_s"],
+#             data=np.array([[np.nan, np.nan]]),
+#         )
+#         return fake_df
 
-    # Main
-    df_r, xx_r, fs_r = mngs.dsp.detect_ripples(
-        xx,
-        CONFIG["FS_iEEG"],
-        CONFIG["RIPPLE_LOW_HZ"],
-        CONFIG["RIPPLE_HIGH_HZ"],
-        return_preprocessed_signal=True,
-    )
-    df_r.index.name = "trial_number"
+#     # Main
+#     df_r, xx_r, fs_r = mngs.dsp.detect_ripples(
+#         xx,
+#         CONFIG["FS_iEEG"],
+#         CONFIG["RIPPLE_LOW_HZ"],
+#         CONFIG["RIPPLE_HIGH_HZ"],
+#         return_preprocessed_signal=True,
+#     )
+#     df_r.index.name = "trial_number"
 
-    mngs.io.save(
-        (xx_r, fs_r),
-        eval(CONFIG["PATH_iEEG"]).replace("iEEG", "iEEG_ripple_preprocessed"),
-        from_cwd=True,
-    )
+#     mngs.io.save(
+#         (xx_r, fs_r),
+#         eval(CONFIG["PATH_iEEG"]).replace("iEEG", "iEEG_ripple_preprocessed"),
+#         from_cwd=True,
+#     )
 
-    df_r = transfer_metadata(df_r, trials_info)
+#     df_r = transfer_metadata(df_r, trials_info)
 
-    df_r["subject"] = sub
-    df_r["session"] = session
+#     df_r["subject"] = sub
+#     df_r["session"] = session
 
-    # Drops rows with NaN values
-    df_r = df_r[~df_r.isna().any(axis=1)]
+#     # Drops rows with NaN values
+#     df_r = df_r[~df_r.isna().any(axis=1)]
 
-    return df_r
+#     return df_r
 
 
 def transfer_metadata(df_r, trials_info):
@@ -125,47 +124,47 @@ def add_phase(df_r):
     return df_r
 
 
-def detect_ripples_all():
-    for roi in CONFIG["iEEG_ROIS"]:
-        mngs.gen.print_block(roi)
+# def detect_ripples_all():
+#     for roi in CONFIG["iEEG_ROIS"]:
+#         mngs.gen.print_block(roi)
 
-        roi_connected = mngs.general.connect_strs([roi])
+#         roi_connected = mngs.general.connect_strs([roi])
 
-        rips_df = []
-        for sub, session in itertools.product(
-            CONFIG["SUBJECTS"], CONFIG["FIRST_TWO_SESSIONS"]
-        ):
-            _df_r = add_phase(
-                detect_ripples_roi(
-                    sub=sub,
-                    session=session,
-                    sd=CONFIG["RIPPLE_SD"],
-                    roi=roi_connected,
-                )
-            )
-            rips_df.append(_df_r)
-        rips_df = pd.concat(rips_df)
+#         rips_df = []
+#         for sub, session in itertools.product(
+#             CONFIG["SUBJECTS"], CONFIG["FIRST_TWO_SESSIONS"]
+#         ):
+#             _df_r = add_phase(
+#                 detect_ripples_roi(
+#                     sub=sub,
+#                     session=session,
+#                     sd=CONFIG["RIPPLE_SD"],
+#                     roi=roi_connected,
+#                 )
+#             )
+#             rips_df.append(_df_r)
+#         rips_df = pd.concat(rips_df)
 
-        mngs.io.save(
-            rips_df,
-            f"./data/rips_df/{roi_connected}.pkl",
-            from_cwd=True,
-        )
+#         mngs.io.save(
+#             rips_df,
+#             f"./data/rips_df/{roi_connected}.pkl",
+#             from_cwd=True,
+#         )
 
 
-def main_lpath(lpath):
+def main_lpath(lpath_iEEG):
     """
     LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
     lpath = LPATHS_iEEG[0]
     """
     # Parsing variables from lpath
-    parsed = parse_lpath(lpath)
+    parsed = parse_lpath(lpath_iEEG)
     sub = parsed["sub"]
     session = parsed["session"]
     roi = parsed["roi"]
 
     # Loading
-    iEEG = xx = mngs.io.load(lpath)
+    iEEG = xx = mngs.io.load(lpath_iEEG)
 
     # Returns fake dataframe as ripple data for no channels data
     if xx.shape[1] == 0:
@@ -211,8 +210,8 @@ def main_lpath(lpath):
 
 def main():
     LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
-    for lpath in LPATHS_iEEG:
-        main_lpath(lpath)
+    for lpath_iEEG in LPATHS_iEEG:
+        main_lpath(lpath_iEEG)
 
 
 if __name__ == "__main__":

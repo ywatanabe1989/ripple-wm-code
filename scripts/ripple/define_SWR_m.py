@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-29 16:14:10 (ywatanabe)"
+# Time-stamp: "2024-06-29 18:05:04 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -57,40 +57,62 @@ Functions & Classes
 
 
 def main():
+    ################################################################################
+    ## Delete us
+    ################################################################################
     LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
-    lpath = LPATHS_RIPPLE[0]
-    df = mngs.io.load(lpath)
+    LPATHS_iEEG_RIPPLE_BAND = mngs.gen.natglob(CONFIG["PATH_iEEG_RIPPLE_BAND"])
+
+    lpath_ripple = LPATHS_RIPPLE[0]
+    lpath_iEEG = LPATHS_iEEG_RIPPLE_BAND[0]
+    ################################################################################
+
+    # Loading
+    # SWR+
+    df_p = mngs.io.load(lpath_ripple)
+    (iEEG_ripple_band, fs) = (xxr, fs) = mngs.io.load(lpath_iEEG)
+
+    # Starts defining SWR-
+    df_m = df_p.copy()[["start_s", "end_s", "duration_s"]]
+
+    # Shuffle ripple period (row) within a session as controls
+    df_m = df_m.iloc[np.random.permutation(np.arange(len(df_m)))]
+    trial_numbers = [
+        random.randint(0, df_p.index.max() - 1) for _ in range(len(df_m))
+    ]
+    df_m.index = trial_numbers
+    df_m = df_m.sort_index()
+
+    # Adds metadata for the control data
+    # df_p.columns
+    # ['rel_peak_pos', 'peak_amp_sd', 'incidence_hz', 'set_size', 'match', 'correct',
+    #  'response_time', 'subject', 'session']
+    row = df_m.iloc[0]  # fixme
+
+    _xxr = xxr[row.name][int(row.start_s * fs) : int(row.end_s * fs)]
+    print(_xxr.shape)
     __import__("ipdb").set_trace()
-    #
-    mngs.gen.natglob(CONFIG["PATH_iEEG_RIPPLE_BAND"])
 
-    __import__("ipdb").set_trace()
+    # __import__("ipdb").set_trace()
 
-    print(LPATHS_RIPPLE)
+    # print(LPATHS_RIPPLE)
 
-    for lpath in LPATHS_RIPPLE:
-        df_plus = mngs.io.load(lpath)
+    # for lpath in LPATHS_RIPPLE:
+    #     df_plus = mngs.io.load(lpath)
 
-        df_plus[["subject", "session"]].drop_duplicates()
+    #     df_plus[["subject", "session"]].drop_duplicates()
 
-        df_minus = df_plus.copy()
-        cols_to_del = [
-            "peak_s",
-            "rel_peak_pos",
-            "peak_amp_sd",
-            "incidence_hz",
-            "set_size",
-            "match",
-        ]
-        df_minus["peak_s"] = np.nan
-        df_minus["rel_peak_pos"] = np.nan
+    #     df_minus = df_plus.copy()
 
-        print()
+    #     df_minus["peak_s"] = np.nan
+    #     df_minus["rel_peak_pos"] = np.nan
 
-    __import__("ipdb").set_trace()
-    # rips_df = mngs.io.load(f"./data/rips_df/{iEEG_roi_connected}.pkl")
+    #     print()
 
-    pass
+    # __import__("ipdb").set_trace()
+    # # rips_df = mngs.io.load(f"./data/rips_df/{iEEG_roi_connected}.pkl")
+
+    # pass
 
 
 if __name__ == "__main__":
@@ -103,7 +125,7 @@ if __name__ == "__main__":
 
     # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
-        sys, plt, verbose=False
+        sys, plt, verbose=False, random=random, np=np
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
