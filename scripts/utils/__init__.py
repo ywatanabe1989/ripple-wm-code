@@ -1,1 +1,1 @@
-from . import load
+from ._parse_lpath import parse_lpath

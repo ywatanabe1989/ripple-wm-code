@@ -7,29 +7,24 @@
 ./scripts/load/nix_2_csv_and_pkl.py
 ```
 
-
 #### Demographic data
 ```bash
-./scripts/demographic/
+./scripts/demographic/fetch_demographic_data.py
 ```
 
-
-#### Detects ripples
+#### Ripple Detection
 ```bash
-./scripts/ripple/detect_ripples.py
+./scripts/ripple/detect_SWR_p.py
+./scripts/ripple/define_SWR_m.py
+# ./scripts/ripple/UMAP_for_defining_putative_CA1.py
 ```
 
-#### Calculates neural trajectory (NT) with GPFA
+#### Neural trajectory (NT) calculation with GPFA
 ```bash
 find data -name '*NT*' | xargs rm -rf
 ./scripts/NT/calc_NT_with_GPFA.py
 ./scripts/NT/znorm_NT.py
 ```
-
-
-
-
-
 
 
 

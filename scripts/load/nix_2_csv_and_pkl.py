@@ -45,7 +45,7 @@ Functions & Classes
 
 
 def main():
-    fpaths = glob("./data/data_nix/*")
+    fpaths = glob("./data/data_nix/*.h5")
     for iEEG_ROI in ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]:
         # iEEG_ROI_STR = mngs.general.connect_strs(iEEG_ROI)
         for fpath in fpaths:
@@ -56,13 +56,9 @@ def main():
             meta_df, trials_info, iEEG, EEG, spike_times = load_h5(f, iEEG_ROI)
 
             # Saves
-            subject = re.findall("Subject_[\0-9]{2}", fpath)[0][-2:]
+            sub = re.findall("Subject_[\0-9]{2}", fpath)[0][-2:]
             session = re.findall("Session_[\0-9]{2}", fpath)[0][-2:]
-            session_dir = (
-                CONFIG["SESSION_DIR"]
-                .replace("XX", f"{subject}")
-                .replace("YY", f"{session}")
-            )
+            session_dir = eval(CONFIG["DIR_SESSION"])
 
             mngs.io.save(meta_df, session_dir + f"meta.csv", from_cwd=True)
             mngs.io.save(

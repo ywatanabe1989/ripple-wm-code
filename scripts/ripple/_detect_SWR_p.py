@@ -1,7 +1,7 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-25 20:22:40 (ywatanabe)"
-# detect_ripples.py
+# Time-stamp: "2024-06-29 16:15:56 (ywatanabe)"
+# ./scripts/ripple/detect_SWR_p.py
 
 
 """
@@ -23,7 +23,7 @@ pd.set_option("future.no_silent_downcasting", True)
 import itertools
 
 import torch
-from scripts import utils
+from scripts import load
 
 # from scripts.externals.ripple_detection.ripple_detection.detectors import (
 #     Kay_ripple_detector,
@@ -62,7 +62,7 @@ def calc_iou(a, b):
     return abx_len / (a_len + b_len - abx_len)
 
 
-def detect_ripples_roi(sub, session, sd, iEEG_roi):
+def detect_ripples_roi(sub, session, sd, roi):
     """
     1) take the common averaged signal of ROI
     2) detect ripples from the signals of ROI and the common averaged signal
@@ -77,51 +77,45 @@ def detect_ripples_roi(sub, session, sd, iEEG_roi):
         {0: False, 1: True}
     )
 
-    # sync_z_session = mngs.io.load(
-    #     f"./data/Sub_{sub}/Session_{session}/sync_z/{iEEG_roi}.npy"
-    # )
+    iEEG, _ = load.iEEG(sub, session, roi, return_common_averaged_signal=True)
+    xx = iEEG  # alias
 
-    # koko
-    iEEG, iEEG_common_ave = utils.load.iEEG(
-        sub, session, iEEG_roi, return_common_averaged_signal=True
-    )
-    # iEEG.shape # (50, 8, 16000)
-
-    xx, xxa = iEEG, iEEG_common_ave  # aliases
-
-    if xx.shape[1] == 0:  # For no channels data
+    # Fake dataframe for no channels data
+    if xx.shape[1] == 0:
         fake_df = pd.DataFrame(
             columns=["start_s", "end_s"],
             data=np.array([[np.nan, np.nan]]),
         )
         return fake_df
 
-    # Bandpass filtering
-    xx_r, xxa_r = [
-        mngs.dsp.filt.bandpass(
-            np.array(xx).astype(float),
-            np.array(CONFIG["FS_iEEG"]).astype(float),
-            CONFIG["RIPPLE_BANDS"],
-        )
-        .astype(np.float64)
-        .squeeze(-2)
-        for _xx in [xx, xxa]
-    ]
-
     # Main
-    time = mngs.dsp.time(0, CONFIG["TRIAL_SEC"], CONFIG["FS_iEEG"])
-    time_iEEG = time
-    # time_iEEG = np.arange(iEEG.shape[-1]) / CONFIG["FS_iEEG"]
-    # speed = 0 * time_iEEG
-
-    rip_df = mngs.dsp.detect_ripples(
-        xx_r,
+    df_r, xx_r, fs_r = mngs.dsp.detect_ripples(
+        xx,
         CONFIG["FS_iEEG"],
         CONFIG["RIPPLE_LOW_HZ"],
         CONFIG["RIPPLE_HIGH_HZ"],
+        return_preprocessed_signal=True,
     )
-    rip_df.index.name = "trial_number"
+    df_r.index.name = "trial_number"
 
+    mngs.io.save(
+        (xx_r, fs_r),
+        eval(CONFIG["PATH_iEEG"]).replace("iEEG", "iEEG_ripple_preprocessed"),
+        from_cwd=True,
+    )
+
+    df_r = transfer_metadata(df_r, trials_info)
+
+    df_r["subject"] = sub
+    df_r["session"] = session
+
+    # Drops rows with NaN values
+    df_r = df_r[~df_r.isna().any(axis=1)]
+
+    return df_r
+
+
+def transfer_metadata(df_r, trials_info):
     # Transfer information to the dataframe
     transfer_keys = [
         "set_size",
@@ -131,30 +125,26 @@ def detect_ripples_roi(sub, session, sd, iEEG_roi):
     ]
     # Initialization
     for k in transfer_keys:
-        rip_df[k] = str(np.nan)
+        df_r[k] = str(np.nan)
 
     for ii in range(len(trials_info)):
         for k in transfer_keys:
-            rip_df.loc[ii, k] = trials_info.loc[ii, k]
-
-    rip_df["subject"] = sub
-    rip_df["session"] = session
-
-    return rip_df
+            df_r.loc[ii, k] = trials_info.loc[ii, k]
+    return df_r
 
 
-def add_phase(rip_df):
-    rip_df["center_time"] = (rip_df["start_s"] + rip_df["end_s"]) / 2
-    rip_df["phase"] = None
-    rip_df.loc[rip_df["center_time"] < 1, "phase"] = "Fixation"
-    rip_df.loc[
-        (1 < rip_df["center_time"]) & (rip_df["center_time"] < 3), "phase"
+def add_phase(df_r):
+    df_r["center_time"] = (df_r["start_s"] + df_r["end_s"]) / 2
+    df_r["phase"] = None
+    df_r.loc[df_r["center_time"] < 1, "phase"] = "Fixation"
+    df_r.loc[
+        (1 < df_r["center_time"]) & (df_r["center_time"] < 3), "phase"
     ] = "Encoding"
-    rip_df.loc[
-        (3 < rip_df["center_time"]) & (rip_df["center_time"] < 6), "phase"
+    df_r.loc[
+        (3 < df_r["center_time"]) & (df_r["center_time"] < 6), "phase"
     ] = "Maintenance"
-    rip_df.loc[6 < rip_df["center_time"], "phase"] = "Retrieval"
-    return rip_df
+    df_r.loc[6 < df_r["center_time"], "phase"] = "Retrieval"
+    return df_r
 
 
 # def plot_traces(FS_iEEG):
@@ -189,10 +179,10 @@ def add_phase(rip_df):
 #         label="Ripple-band-passed LFP",
 #     )
 #     # fills ripple time
-#     rip_plot_df = rip_df[
-#         (rip_df["trial_number"] == i_trial + 1)
-#         & (plot_start_sec < rip_df["start_s"])
-#         & (rip_df["end_s"] < plot_start_sec + plot_dur_sec)
+#     rip_plot_df = df_r[
+#         (df_r["trial_number"] == i_trial + 1)
+#         & (plot_start_sec < df_r["start_s"])
+#         & (df_r["end_s"] < plot_start_sec + plot_dur_sec)
 #     ]
 
 #     for ax in axes:
@@ -216,76 +206,74 @@ def add_phase(rip_df):
 #     )
 
 
-# def plot_hist(rip_df):
+# def plot_hist(df_r):
 #     plt.close()
-#     rip_df["dur_time"] = rip_df["end_s"] - rip_df["start_s"]
-#     rip_df["dur_ms"] = rip_df["dur_time"] * 1000
+#     df_r["dur_time"] = df_r["end_s"] - df_r["start_s"]
+#     df_r["dur_ms"] = df_r["dur_time"] * 1000
 
-#     plt.hist(rip_df["dur_ms"], bins=100)
+#     plt.hist(df_r["dur_ms"], bins=100)
 #     plt.xlabel("Ripple duration [sec]")
 #     plt.ylabel("Count of ripple events")
 #     # plt.show()
 #     mngs.io.save(plt, "./tmp/ripple_count_sub_01_session_01_trial_01-50.png")
 
 
-def calc_rip_incidence_hz(rip_df):
-    rip_df["n"] = 1
-    rip_incidence_hz = pd.concat(
-        [
-            rip_df[rip_df["phase"] == "Fixation"]
-            .pivot_table(columns=["trial_number"], aggfunc="sum")
-            .T["n"]
-            / 1,
-            rip_df[rip_df["phase"] == "Encoding"]
-            .pivot_table(columns=["trial_number"], aggfunc="sum")
-            .T["n"]
-            / 2,
-            rip_df[rip_df["phase"] == "Maintenance"]
-            .pivot_table(columns=["trial_number"], aggfunc="sum")
-            .T["n"]
-            / 3,
-            rip_df[rip_df["phase"] == "Retrieval"]
-            .pivot_table(columns=["trial_number"], aggfunc="sum")
-            .T["n"]
-            / 2,
-        ],
-        axis=1,
-    ).fillna(0)
-    rip_incidence_hz.columns = [
-        "Fixation",
-        "Encoding",
-        "Maintenance",
-        "Retrieval",
-    ]
-    return rip_incidence_hz
+# def calc_rip_incidence_hz(df_r):
+#     df_r["n"] = 1
+#     rip_incidence_hz = pd.concat(
+#         [
+#             df_r[df_r["phase"] == "Fixation"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 1,
+#             df_r[df_r["phase"] == "Encoding"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 2,
+#             df_r[df_r["phase"] == "Maintenance"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 3,
+#             df_r[df_r["phase"] == "Retrieval"]
+#             .pivot_table(columns=["trial_number"], aggfunc="sum")
+#             .T["n"]
+#             / 2,
+#         ],
+#         axis=1,
+#     ).fillna(0)
+#     rip_incidence_hz.columns = [
+#         "Fixation",
+#         "Encoding",
+#         "Maintenance",
+#         "Retrieval",
+#     ]
+#     return rip_incidence_hz
 
 
 def detect_ripples_all():
-    for iEEG_roi in CONFIG["iEEG_ROIS"]:
-        mngs.gen.print_block(iEEG_roi)
+    for roi in CONFIG["iEEG_ROIS"]:
+        mngs.gen.print_block(roi)
 
-        iEEG_roi_connected = mngs.general.connect_strs(
-            [iEEG_roi]
-        )  # For multiple ROIs
+        roi_connected = mngs.general.connect_strs([roi])  # For multiple ROIs
 
         rips_df = []
         for sub, session in itertools.product(
             CONFIG["SUBJECTS"], CONFIG["FIRST_TWO_SESSIONS"]
         ):
-            _rip_df = add_phase(
+            _df_r = add_phase(
                 detect_ripples_roi(
                     sub=sub,
                     session=session,
                     sd=CONFIG["RIPPLE_SD"],
-                    iEEG_roi=iEEG_roi_connected,
+                    roi=roi_connected,
                 )
             )
-            rips_df.append(_rip_df)
+            rips_df.append(_df_r)
         rips_df = pd.concat(rips_df)
 
         mngs.io.save(
             rips_df,
-            f"./data/rips_df/{iEEG_roi_connected}.pkl",
+            f"./data/rips_df/{roi_connected}.pkl",
             from_cwd=True,
         )
 

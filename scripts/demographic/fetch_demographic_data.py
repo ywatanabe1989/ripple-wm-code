@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-27 19:06:17 (ywatanabe)"
+# Time-stamp: "2024-06-27 20:48:45 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/demographic/electrode_positions.py
 
 
@@ -66,7 +66,7 @@ def find_subjects(subject_dirs):
     for subject_dir in subject_dirs:
         match = re.match(r"./data/Sub_(\d+)/", subject_dir)
         if match:
-            subject = match.groups()
+            subject = match.groups()[0]  # Because match.groups() returns tuple
             subjects.append(subject)
 
     return subjects
