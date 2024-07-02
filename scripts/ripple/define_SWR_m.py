@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-29 18:05:04 (ywatanabe)"
+# Time-stamp: "2024-07-02 20:23:12 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -22,7 +22,9 @@ import mngs
 import seaborn as sns
 
 mngs.gen.reload(mngs)
+import random
 import warnings
+from functools import partial
 from glob import glob
 from pprint import pprint
 
@@ -34,6 +36,8 @@ import torch.nn.functional as F
 import xarray as xr
 from icecream import ic
 from natsort import natsorted
+from scripts.ripple.detect_SWR_p import transfer_metadata
+from scripts.utils import parse_lpath
 from tqdm import tqdm
 
 # sys.path = ["."] + sys.path
@@ -56,24 +60,43 @@ Functions & Classes
 """
 
 
+def add_rel_peak_pos(row, xxr, fs_r):
+    _xxr = xxr[row.name][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
+    return _xxr.argmax() / len(_xxr)
+
+
+def add_peak_amp_sd(row, xxr, fs_r):
+    _xxr = xxr[row.name][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
+    return _xxr.max()
+
+
 def main():
-    ################################################################################
-    ## Delete us
-    ################################################################################
     LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
     LPATHS_iEEG_RIPPLE_BAND = mngs.gen.natglob(CONFIG["PATH_iEEG_RIPPLE_BAND"])
 
-    lpath_ripple = LPATHS_RIPPLE[0]
-    lpath_iEEG = LPATHS_iEEG_RIPPLE_BAND[0]
-    ################################################################################
+    for lpath_ripple, lpath_iEEG in zip(
+        LPATHS_RIPPLE, LPATHS_iEEG_RIPPLE_BAND
+    ):
+        main_lpath(lpath_ripple, lpath_iEEG)
 
+
+def main_lpath(lpath_ripple, lpath_iEEG):
     # Loading
     # SWR+
     df_p = mngs.io.load(lpath_ripple)
-    (iEEG_ripple_band, fs) = (xxr, fs) = mngs.io.load(lpath_iEEG)
+    (iEEG_ripple_band, fs_r) = (xxr, fs_r) = mngs.io.load(lpath_iEEG)
 
-    # Starts defining SWR-
-    df_m = df_p.copy()[["start_s", "end_s", "duration_s"]]
+    # Parsing lpath
+    parsed = parse_lpath(lpath_ripple)
+    sub = parsed["sub"]
+    session = parsed["session"]
+    roi = parsed["roi"]
+
+    # Trials info
+    trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
+
+    # Starts defining SWR- using SWR+, iEEG signal, and trials_info
+    df_m = df_p[["start_s", "end_s", "duration_s"]].copy()
 
     # Shuffle ripple period (row) within a session as controls
     df_m = df_m.iloc[np.random.permutation(np.arange(len(df_m)))]
@@ -84,35 +107,29 @@ def main():
     df_m = df_m.sort_index()
 
     # Adds metadata for the control data
-    # df_p.columns
-    # ['rel_peak_pos', 'peak_amp_sd', 'incidence_hz', 'set_size', 'match', 'correct',
-    #  'response_time', 'subject', 'session']
-    row = df_m.iloc[0]  # fixme
+    df_m = transfer_metadata(df_m, trials_info)
 
-    _xxr = xxr[row.name][int(row.start_s * fs) : int(row.end_s * fs)]
-    print(_xxr.shape)
-    __import__("ipdb").set_trace()
+    # rel_peak_pos
+    df_m["rel_peak_pos"] = df_m.apply(
+        partial(add_rel_peak_pos, xxr=xxr, fs_r=fs_r), axis=1
+    )
 
-    # __import__("ipdb").set_trace()
+    # peak_amp_sd
+    df_m["peak_amp_sd"] = df_m.apply(
+        partial(add_peak_amp_sd, xxr=xxr, fs_r=fs_r), axis=1
+    )
 
-    # print(LPATHS_RIPPLE)
+    # subject
+    df_m.loc[:, "subject"] = sub
 
-    # for lpath in LPATHS_RIPPLE:
-    #     df_plus = mngs.io.load(lpath)
+    # session
+    df_m.loc[:, "session"] = session
 
-    #     df_plus[["subject", "session"]].drop_duplicates()
+    assert len(df_p) == len(df_m)
 
-    #     df_minus = df_plus.copy()
-
-    #     df_minus["peak_s"] = np.nan
-    #     df_minus["rel_peak_pos"] = np.nan
-
-    #     print()
-
-    # __import__("ipdb").set_trace()
-    # # rips_df = mngs.io.load(f"./data/rips_df/{iEEG_roi_connected}.pkl")
-
-    # pass
+    # Saving
+    spath = lpath_ripple.replace("SWR_p", "SWR_m")
+    mngs.io.save(df_m, spath)
 
 
 if __name__ == "__main__":
