@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-02 19:56:30 (ywatanabe)"
+# Time-stamp: "2024-07-03 00:31:09 (ywatanabe)"
 # ./scripts/ripple/detect_SWR_p.py
 
 
@@ -13,6 +13,8 @@ This script does XYZ.
 Imports
 """
 import sys
+from bisect import bisect_left
+from functools import partial
 
 import matplotlib.pyplot as plt
 import mngs
@@ -75,6 +77,36 @@ def transfer_metadata(df_r, trials_info):
 #     return df_r
 
 
+def add_firing_patterns(df_r):
+
+    def _add_firing_patterns(df_r_row, spike_times):
+
+        i_trial = df_r_row.name
+
+        firing_pattern = spike_times[i_trial][
+            (float(df_r_row.start_s) < spike_times[i_trial])
+            * (spike_times[i_trial] < float(df_r_row.end_s))
+        ]
+        firing_pattern = (~firing_pattern.isna()).sum()
+        return [firing_pattern]
+
+    # Fetch metadata to load spike_times
+    sub = df_r.subject.iloc[0]
+    session = df_r.session.iloc[0]
+    roi = df_r.roi.iloc[0]
+
+    # Loading
+    spike_times = mngs.io.load(eval(CONFIG["PATH_SPIKE_TIMES"]))
+    spike_times = [
+        st.replace("", np.nan).astype(float) + 6 for st in spike_times
+    ]
+    df_r["firing_pattern"] = df_r.apply(
+        partial(_add_firing_patterns, spike_times=spike_times), axis=1
+    )
+
+    return df_r
+
+
 def main_lpath(lpath_iEEG):
     """
     LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
@@ -114,9 +146,13 @@ def main_lpath(lpath_iEEG):
     df_r = transfer_metadata(df_r, trials_info)
     df_r["subject"] = sub
     df_r["session"] = session
+    df_r["roi"] = roi
 
     # Remove NaN rows here
     df_r = df_r[~df_r.isna().any(axis=1)]
+
+    # Firing pattern
+    df_r = add_firing_patterns(df_r)
 
     # Saving
     # Ripple

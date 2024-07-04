@@ -15,7 +15,9 @@
 #### Ripple Detection
 ```bash
 ./scripts/ripple/detect_SWR_p.py
+./scripts/ripple/plot_SWR_p.py
 ./scripts/ripple/define_SWR_m.py
+./scripts/ripple/define_putative_CA1_using_UMAP.py
 # ./scripts/ripple/UMAP_for_defining_putative_CA1.py
 ```
 

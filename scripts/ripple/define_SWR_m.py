@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-02 20:23:12 (ywatanabe)"
+# Time-stamp: "2024-07-03 00:33:16 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -36,7 +36,7 @@ import torch.nn.functional as F
 import xarray as xr
 from icecream import ic
 from natsort import natsorted
-from scripts.ripple.detect_SWR_p import transfer_metadata
+from scripts.ripple.detect_SWR_p import add_firing_patterns, transfer_metadata
 from scripts.utils import parse_lpath
 from tqdm import tqdm
 
@@ -125,11 +125,17 @@ def main_lpath(lpath_ripple, lpath_iEEG):
     # session
     df_m.loc[:, "session"] = session
 
+    # session
+    df_m.loc[:, "roi"] = roi
+
+    # Firing patterns
+    df_m = add_firing_patterns(df_m)
+
     assert len(df_p) == len(df_m)
 
     # Saving
     spath = lpath_ripple.replace("SWR_p", "SWR_m")
-    mngs.io.save(df_m, spath)
+    mngs.io.save(df_m, spath, from_cwd=True)
 
 
 if __name__ == "__main__":
