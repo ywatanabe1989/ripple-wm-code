@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-05 16:16:35 (ywatanabe)"
+# Time-stamp: "2024-07-05 20:12:15 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_putative_CA1_using_UMAP.py
 
 
@@ -33,7 +33,45 @@ Functions & Classes
 """
 
 
-def calc_silhouette_score(lpath_ripple_p):
+def calc_silhouette_scores():
+    for roi in tqdm(CONFIG["ROIS"].keys()):
+        out = mngs.gen.listed_dict()
+        for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG["PATH_RIPPLE"])):
+            parsed = parse_lpath(lpath_ripple_p)
+
+            if not parsed["roi"] in CONFIG["ROIS"][roi]:
+                continue
+
+            sil_score = _calc_silhouette_score(lpath_ripple_p)
+
+            out["sub"].append(parsed["sub"])
+            out["session"].append(parsed["session"])
+            out["roi"].append(parsed["roi"])
+            out["silhouette_score"].append(sil_score)
+            out["lpath_ripple"].append(lpath_ripple_p)
+
+        df = pd.DataFrame(out)
+        df_pivot, df_sorted = sort_df(df)
+
+        # Printing
+        print(df)
+        print(df_pivot)
+        print(df_sorted)
+
+        # Saving
+        for var, sname in (
+            (df, "raw"),
+            (df_pivot, "table"),
+            (df_sorted, "sorted_table"),
+        ):
+            mngs.io.save(
+                var,
+                f"./data/silhouette_scores/{roi}/{sname}.csv",
+                from_cwd=True,
+            )
+
+
+def _calc_silhouette_score(lpath_ripple_p):
     # SWR+
     pp = mngs.io.load(lpath_ripple_p)
     X_pp = np.vstack(pp.firing_pattern)
@@ -115,55 +153,43 @@ def sort_df(df):
 
 
 def main():
+    calc_silhouette_scores()
+    determine_putative_CA1()
+
+
+def determine_putative_CA1():
     for roi in tqdm(CONFIG["ROIS"].keys()):
-        out = mngs.gen.listed_dict()
-        for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG["PATH_RIPPLE"])):
-            parsed = parse_lpath(lpath_ripple_p)
+        # Loading
+        df = mngs.io.load(f"./data/silhouette_scores/{roi}/raw.csv").drop(
+            columns=["lpath_ripple"]
+        )
 
-            if not parsed["roi"] in CONFIG["ROIS"][roi]:
-                continue
+        # Calculation of count, mean, and standard deviation for 'silhouette_score' across sessions
+        df = (
+            df.groupby(["sub", "roi"])
+            .agg(
+                silhouette_score_mean=("silhouette_score", "mean"),
+                silhouette_score_std=("silhouette_score", "std"),
+                session_count=("session", "count"),
+            )
+            .round(3)
+            .reset_index()
+            .set_index("sub")
+        )
 
-            sil_score = calc_silhouette_score(lpath_ripple_p)
-
-            out["sub"].append(parsed["sub"])
-            out["session"].append(parsed["session"])
-            out["roi"].append(parsed["roi"])
-            out["silhouette_score"].append(sil_score)
-            out["lpath_ripple"].append(lpath_ripple_p)
-
-        df = pd.DataFrame(out)
-        df_pivot, df_sorted = sort_df(df)
-
-        # Printing
-        print(df)
-        print(df_pivot)
-        print(df_sorted)
+        # Plotting
+        fig, ax = mngs.plt.subplots()
+        ax.ecdf(df.silhouette_score_mean[~df.silhouette_score_mean.isna()])
 
         # Saving
-        for var, sname in (
-            (df, "raw"),
-            (df_pivot, "table"),
-            (df_sorted, "sorted_table"),
-        ):
-            mngs.io.save(
-                var,
-                f"./data/silhouette_scores/{roi}/{sname}.csv",
-                from_cwd=True,
-            )
-
-        # mngs.io.save(
-        #     df, f"./data/silhouette_scores/{roi}/raw.csv", from_cwd=True
-        # )
-        # mngs.io.save(
-        #     df_pivot,
-        #     f"./data/silhouette_scores/{roi}/table.csv",
-        #     from_cwd=True,
-        # )
-        # mngs.io.save(
-        #     df_sorted,
-        #     f"./data/silhouette_scores/{roi}/sorted_table.csv",
-        #     from_cwd=True,
-        # )
+        mngs.io.save(
+            fig, f"./data/silhouette_scores/{roi}/fig.jpg", from_cwd=True
+        )
+        mngs.io.save(
+            ax.to_sigma(),
+            f"./data/silhouette_scores/{roi}/fig.csv",
+            from_cwd=True,
+        )
 
 
 if __name__ == "__main__":
