@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-03 00:31:09 (ywatanabe)"
+# Time-stamp: "2024-07-05 08:44:22 (ywatanabe)"
 # ./scripts/ripple/detect_SWR_p.py
 
 
@@ -38,8 +38,8 @@ Functions & Classes
 """
 
 
-def transfer_metadata(df_r, trials_info):
-    df_r.index.name = "trial_number"
+def transfer_metadata(df, trials_info):
+    df.index.name = "trial_number"
 
     # Transfer information to the dataframe
     transfer_keys = [
@@ -50,68 +50,69 @@ def transfer_metadata(df_r, trials_info):
     ]
     # Initialization
     for k in transfer_keys:
-        df_r[k] = str(np.nan)
+        df[k] = str(np.nan)
 
     for ii in range(len(trials_info)):
         for k in transfer_keys:
-            df_r.loc[ii, k] = trials_info.loc[ii, k]
+            df.loc[ii, k] = trials_info.loc[ii, k]
 
     # Remove NaN rows
-    df_r = df_r[~df_r.isna().any(axis=1)].copy()
+    df = df[~df.isna().any(axis=1)].copy()
 
-    return df_r
+    return df
 
 
 # ## will be used
-# def add_phase(df_r):
-#     df_r["center_time"] = (df_r["start_s"] + df_r["end_s"]) / 2
-#     df_r["phase"] = None
-#     df_r.loc[df_r["center_time"] < 1, "phase"] = "Fixation"
-#     df_r.loc[
-#         (1 < df_r["center_time"]) & (df_r["center_time"] < 3), "phase"
+# def add_phase(df):
+#     df["center_time"] = (df["start_s"] + df["end_s"]) / 2
+#     df["phase"] = None
+#     df.loc[df["center_time"] < 1, "phase"] = "Fixation"
+#     df.loc[
+#         (1 < df["center_time"]) & (df["center_time"] < 3), "phase"
 #     ] = "Encoding"
-#     df_r.loc[
-#         (3 < df_r["center_time"]) & (df_r["center_time"] < 6), "phase"
+#     df.loc[
+#         (3 < df["center_time"]) & (df["center_time"] < 6), "phase"
 #     ] = "Maintenance"
-#     df_r.loc[6 < df_r["center_time"], "phase"] = "Retrieval"
-#     return df_r
+#     df.loc[6 < df["center_time"], "phase"] = "Retrieval"
+#     return df
 
 
-def add_firing_patterns(df_r):
+def add_firing_patterns(df):
 
-    def _add_firing_patterns(df_r_row, spike_times):
+    def _add_firing_patterns(df_row, spike_times):
 
-        i_trial = df_r_row.name
+        trial_number = df_row.name
+        i_trial = trial_number - 1
 
         firing_pattern = spike_times[i_trial][
-            (float(df_r_row.start_s) < spike_times[i_trial])
-            * (spike_times[i_trial] < float(df_r_row.end_s))
+            (float(df_row.start_s) < spike_times[i_trial])
+            * (spike_times[i_trial] < float(df_row.end_s))
         ]
         firing_pattern = (~firing_pattern.isna()).sum()
         return [firing_pattern]
 
     # Fetch metadata to load spike_times
-    sub = df_r.subject.iloc[0]
-    session = df_r.session.iloc[0]
-    roi = df_r.roi.iloc[0]
+    sub = df.subject.iloc[0]
+    session = df.session.iloc[0]
+    roi = df.roi.iloc[0]
 
     # Loading
     spike_times = mngs.io.load(eval(CONFIG["PATH_SPIKE_TIMES"]))
     spike_times = [
         st.replace("", np.nan).astype(float) + 6 for st in spike_times
     ]
-    df_r["firing_pattern"] = df_r.apply(
+    df["firing_pattern"] = df.apply(
         partial(_add_firing_patterns, spike_times=spike_times), axis=1
     )
 
-    return df_r
+    return df
 
 
 def main_lpath(lpath_iEEG):
-    """
-    LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
-    lpath = LPATHS_iEEG[0]
-    """
+
+    # LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
+    # lpath = LPATHS_iEEG[0]
+
     # Parsing variables from lpath
     parsed = parse_lpath(lpath_iEEG)
     sub = parsed["sub"]
@@ -130,7 +131,7 @@ def main_lpath(lpath_iEEG):
         return
 
     # Main
-    df_r, xx_r, fs_r = mngs.dsp.detect_ripples(
+    df, xx_r, fs_r = mngs.dsp.detect_ripples(
         xx,
         CONFIG["FS_iEEG"],
         CONFIG["RIPPLE_LOW_HZ"],
@@ -139,25 +140,26 @@ def main_lpath(lpath_iEEG):
         min_duration_ms=CONFIG["RIPPLE_MIN_DURATION_MS"],
         return_preprocessed_signal=True,
     )
-    df_r.index.name = "trial_number"
+    df.index += 1
+    df.index.name = "trial_number"
 
     # Adds metadata to the ripple table
     trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
-    df_r = transfer_metadata(df_r, trials_info)
-    df_r["subject"] = sub
-    df_r["session"] = session
-    df_r["roi"] = roi
+    df = transfer_metadata(df, trials_info)
+    df["subject"] = sub
+    df["session"] = session
+    df["roi"] = roi
 
     # Remove NaN rows here
-    df_r = df_r[~df_r.isna().any(axis=1)]
+    df = df[~df.isna().any(axis=1)]
 
     # Firing pattern
-    df_r = add_firing_patterns(df_r)
+    df = add_firing_patterns(df)
 
     # Saving
     # Ripple
     spath_ripple = eval(CONFIG["PATH_RIPPLE"])
-    mngs.io.save(df_r, spath_ripple, from_cwd=True, dry_run=False)
+    mngs.io.save(df, spath_ripple, from_cwd=True, dry_run=False)
     # Ripple-band iEEG data
     spath_ripple_band_iEEG = eval(CONFIG["PATH_iEEG"]).replace(
         "iEEG", "iEEG_ripple_preprocessed"

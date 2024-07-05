@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-03 01:31:53 (ywatanabe)"
+# Time-stamp: "2024-07-05 16:16:35 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_putative_CA1_using_UMAP.py
 
 
@@ -12,40 +12,15 @@ This script does XYZ.
 """
 Imports
 """
-import os
-import re
 import sys
 
-import matplotlib
 import matplotlib.pyplot as plt
 import mngs
-import seaborn as sns
-
-mngs.gen.reload(mngs)
-import warnings
-from glob import glob
-from pprint import pprint
-
 import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
 from scripts.utils import parse_lpath
 from sklearn.metrics import silhouette_score
 from tqdm import tqdm
-
-# sys.path = ["."] + sys.path
-# from scripts import utils, load
-
-"""
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
 
 """
 Config
@@ -56,11 +31,9 @@ CONFIG = mngs.gen.load_configs()
 """
 Functions & Classes
 """
-# lpath_ripple_p = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])[0]
-# # lpath_ripple_m = mngs.gen.natglob(CONFIG["PATH_RIPPLE_MINUS"])[0]
 
 
-def main_lpath(lpath_ripple_p):
+def calc_silhouette_score(lpath_ripple_p):
     # SWR+
     pp = mngs.io.load(lpath_ripple_p)
     X_pp = np.vstack(pp.firing_pattern)
@@ -71,7 +44,6 @@ def main_lpath(lpath_ripple_p):
     mm = mngs.io.load(lpath_ripple_m)
     X_mm = np.vstack(mm.firing_pattern)
     T_mm = np.zeros(len(mm))
-    # T_mm = ["SWR-" for _ in range(len(mm))]
 
     # When firing patterns are not available
     if X_pp.size == X_mm.size == 0:
@@ -81,8 +53,9 @@ def main_lpath(lpath_ripple_p):
 
     # UMAP clustering
     fig, legend_figs, _umap = mngs.ml.clustering.umap(
-        [X_pp, X_mm],
-        [T_pp, T_mm],
+        [np.vstack([X_pp, X_mm])],
+        [np.hstack([T_pp, T_mm])],
+        supervised=True,
     )
     plt.close()
     U_pp = _umap.transform(X_pp)
@@ -92,24 +65,105 @@ def main_lpath(lpath_ripple_p):
     sil_score = silhouette_score(
         np.vstack([U_pp, U_mm]), np.hstack([T_pp, T_mm])
     )
-    return round(sil_score, 3)
+    sil_score = round(sil_score, 3)
+
+    return sil_score
+
+
+def sort_df(df):
+    df = df.drop(columns=["lpath_ripple"])
+
+    # Calculate count, mean, and standard deviation for 'session' and 'silhouette_score'
+    df = (
+        df.groupby(["sub", "roi"])
+        .agg(
+            silhouette_score_mean=("silhouette_score", "mean"),
+            silhouette_score_std=("silhouette_score", "std"),
+            session_count=("session", "count"),
+        )
+        .round(3)
+        .reset_index()
+        .set_index("sub")
+    )
+
+    # Format the string as "mean ± std (n = count)"
+    df["formatted"] = df.apply(
+        lambda row: (
+            f"{row['silhouette_score_mean']:.3f} ± {row['silhouette_score_std']:.3f} "
+            f"(n = {row['session_count']})"
+            if pd.notnull(row["silhouette_score_mean"])
+            else "NaN"
+        ),
+        axis=1,
+    )
+
+    # Sort the DataFrame for the sorted_table output
+    df_sorted = (
+        df.reset_index()
+        .sort_values(["silhouette_score_mean", "sub"], ascending=False)
+        .set_index("sub")[["roi", "formatted"]]
+    )
+
+    # Pivot the DataFrame to get the desired format
+    df_pivot = (
+        df.reset_index()
+        .pivot(index="sub", columns="roi", values="formatted")
+        .fillna("NaN")
+    )
+
+    return df_pivot, df_sorted
 
 
 def main():
-    out = mngs.gen.listed_dict()
-    for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG["PATH_RIPPLE"])):
-        parsed = parse_lpath(lpath_ripple_p)
-        sil_score = main_lpath(lpath_ripple_p)
+    for roi in tqdm(CONFIG["ROIS"].keys()):
+        out = mngs.gen.listed_dict()
+        for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG["PATH_RIPPLE"])):
+            parsed = parse_lpath(lpath_ripple_p)
 
-        out["sub"].append(parsed["sub"])
-        out["session"].append(parsed["session"])
-        out["roi"].append(parsed["roi"])
-        out["silhouette_score"].append(sil_score)
-        out["lpath_ripple"].append(lpath_ripple_p)
+            if not parsed["roi"] in CONFIG["ROIS"][roi]:
+                continue
 
-    # Saving
-    out = pd.DataFrame(out)
-    mngs.io.save(out, "./data/silhouette_scores.csv", from_cwd=True)
+            sil_score = calc_silhouette_score(lpath_ripple_p)
+
+            out["sub"].append(parsed["sub"])
+            out["session"].append(parsed["session"])
+            out["roi"].append(parsed["roi"])
+            out["silhouette_score"].append(sil_score)
+            out["lpath_ripple"].append(lpath_ripple_p)
+
+        df = pd.DataFrame(out)
+        df_pivot, df_sorted = sort_df(df)
+
+        # Printing
+        print(df)
+        print(df_pivot)
+        print(df_sorted)
+
+        # Saving
+        for var, sname in (
+            (df, "raw"),
+            (df_pivot, "table"),
+            (df_sorted, "sorted_table"),
+        ):
+            mngs.io.save(
+                var,
+                f"./data/silhouette_scores/{roi}/{sname}.csv",
+                from_cwd=True,
+            )
+
+        # mngs.io.save(
+        #     df, f"./data/silhouette_scores/{roi}/raw.csv", from_cwd=True
+        # )
+        # mngs.io.save(
+        #     df_pivot,
+        #     f"./data/silhouette_scores/{roi}/table.csv",
+        #     from_cwd=True,
+        # )
+        # mngs.io.save(
+        #     df_sorted,
+        #     f"./data/silhouette_scores/{roi}/sorted_table.csv",
+        #     from_cwd=True,
+        # )
 
 
 if __name__ == "__main__":
