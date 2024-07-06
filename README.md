@@ -2,30 +2,12 @@
 
 #### [Installation and download](./docs/installation.md)
 
-#### Converts the .h5 files into csv and pkl files
+#### Scripts
 ```bash
-./scripts/load/nix_2_csv_and_pkl.py
-```
-
-#### Demographic data
-```bash
-./scripts/demographic/fetch_demographic_data.py
-```
-
-#### Ripple Detection
-```bash
-./scripts/ripple/detect_SWR_p.py
-./scripts/ripple/plot_SWR_p.py
-./scripts/ripple/define_SWR_m.py
-./scripts/ripple/define_putative_CA1_using_UMAP.py
-# ./scripts/ripple/UMAP_for_defining_putative_CA1.py
-```
-
-#### Neural trajectory (NT) calculation with GPFA
-```bash
-find data -name '*NT*' | xargs rm -rf
-./scripts/NT/calc_NT_with_GPFA.py
-./scripts/NT/znorm_NT.py
+./scripts/load/all.sh
+./scripts/demographic/all.sh
+./scripts/ripple/all.sh
+./scripts/NT/all.sh
 ```
 
 

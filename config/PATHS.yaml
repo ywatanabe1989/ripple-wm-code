@@ -22,9 +22,8 @@ PATH_RIPPLE:
 PATH_RIPPLE_MINUS:
   f"./data/Sub_{sub}/Session_{session}/SWR_m/{roi}.pkl"
 
-
 PATH_NT:
   f"./data/Sub_{sub}/Session_{session}/NT/{roi}.npy"
 
-PATH_NT_z:
-  f"./data/Sub_{sub}/Session_{session}/NT/{roi}_z_by_session.npy"
+PATH_NT_Z:
+  f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session.npy"
