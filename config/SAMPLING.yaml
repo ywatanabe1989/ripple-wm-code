@@ -1,13 +1,19 @@
-SESSION_THRES:
-  2
+SESSION:
+  THRES:
+    2
+  FIRST_TWO:
+    ["01", "02"]
 
-FIRST_TWO_SESSIONS:
-  ["01", "02"]
 
-SWR_BINS:
-  "pre":
-    [-16, -5]
-  "mid":
-    [-5, 6]
-  "post":
-    [6, 17]
+# SESSION_THRES:
+#   2
+
+# SESSIONS_0102:
+#   ["01", "02"]
+
+
+# SESSION_THRES:
+#   2
+
+# SESSIONS_0102:
+#   ["01", "02"]

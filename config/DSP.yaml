@@ -1,8 +1,11 @@
-FS_iEEG:
-  2000
+FS:
+  iEEG:
+    2000
+  EEG:
+    200
 
-FS_EEG:
-  200
+# FS_iEEG:
+#   2000
 
-iEEG_ROIS:
-  ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]
+# FS_EEG:
+#   200

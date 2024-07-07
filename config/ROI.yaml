@@ -1,9 +1,37 @@
-ROIS:
-    HIP:
-      ["AHL", "AHR", "PHL", "PHR"]
+ROI:
+  iEEG: ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]
+  HIP: ["AHL", "AHR", "PHL", "PHR"]
+  AMY: ["AL", "AR"]
+  EC: ["ECL", "ECR"]
 
-    AMY:
-      ["AL", "AR"]
+  PUTATIVE_CA1:
+    sub:
+      "01": "AHL"
+      "03": "AHR"
+      "04": "PHL"
+      "06": "AHL"
+      "09": "AHR"
 
-    EC:
-      ["ECL", "ECR"]
+
+
+
+# ROIS:
+#     HIP:
+#       ["AHL", "AHR", "PHL", "PHR"]
+
+#     AMY:
+#       ["AL", "AR"]
+
+#     EC:
+#       ["ECL", "ECR"]
+
+# PUTATIVE_CA1:
+#   {"01": "AHL",
+#    "03": "AHR",
+#    "04": "PHL",
+#    "06": "AHL",
+#    "09": "AHR",
+#   }
+
+# # iEEG_ROIS:
+# #   ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]

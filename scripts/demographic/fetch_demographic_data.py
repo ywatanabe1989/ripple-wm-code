@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-27 20:48:45 (ywatanabe)"
+# Time-stamp: "2024-07-06 14:54:09 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/demographic/electrode_positions.py
 
 
@@ -152,7 +152,7 @@ def main():
 
     # Saving
     mngs.io.save(out, "./config/demographic_data.yaml", from_cwd=True)
-    mngs.io.save(df, "./demographic_data.csv", from_cwd=False)
+    mngs.io.save(df, "./data/demographic/demographic.csv", from_cwd=True)
 
 
 if __name__ == "__main__":

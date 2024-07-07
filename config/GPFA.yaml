@@ -1,2 +1,6 @@
-GPFA_BIN_SIZE_MS:
-  50
+GPFA:
+  BIN_SIZE_MS:
+    50
+
+# GPFA_BIN_SIZE_MS:
+#   50

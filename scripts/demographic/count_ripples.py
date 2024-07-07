@@ -1,7 +1,7 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-27 19:32:15 (ywatanabe)"
-# /mnt/ssd/ripple-wm-code/scripts/ripple/UMAP.py
+# Time-stamp: "2024-07-06 14:55:29 (ywatanabe)"
+# /mnt/ssd/ripple-wm-code/scripts/demographic/electrode_positions.py
 
 
 """
@@ -23,6 +23,7 @@ import seaborn as sns
 
 mngs.gen.reload(mngs)
 import warnings
+from collections import OrderedDict
 from glob import glob
 from pprint import pprint
 
@@ -54,10 +55,40 @@ Config
 """
 Functions & Classes
 """
+import os
+import re
+from collections import defaultdict
 
 
 def main():
-    pass
+    out = mngs.gen.listed_dict()
+
+    for sub, roi in CONFIG["PUTATIVE_CA1"].items():
+        for session in CONFIG["SESSIONS_0102"]:
+            df = mngs.io.load(eval(CONFIG["PATH_RIPPLE"]))
+            trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
+
+            n_ripples = len(df)
+            n_trials = len(trials_info)
+
+            out["sub"].append(sub)
+            out["roi"].append(roi)
+            out["n_ripples"].append(n_ripples)
+            out["n_trials"].append(n_trials)
+
+    df = pd.DataFrame(out)
+    df = df.groupby(["sub", "roi"]).agg(
+        {
+            "n_trials": "sum",
+            "n_ripples": "sum",
+        }
+    )
+    df["indidence_hz"] = (
+        df["n_ripples"] / (df["n_trials"] * CONFIG["TRIAL_SEC"])
+    ).round(3)
+
+    # Saving
+    mngs.io.save(df, "./data/demographic/ripple_count.csv", from_cwd=True)
 
 
 if __name__ == "__main__":

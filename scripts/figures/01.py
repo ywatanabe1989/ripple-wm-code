@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-06 07:54:24 (ywatanabe)"
+# Time-stamp: "2024-07-06 18:20:08 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/figures/01.py
 
 
@@ -71,8 +71,8 @@ def A():
     ax.plot(time, xx[i_trial].T)
 
     # Saving
-    mngs.io.save(fig, "./data/figures/A.jpg", from_cwd=True)
-    mngs.io.save(ax.to_sigma(), "./data/figures/A.csv", from_cwd=True)
+    mngs.io.save(fig, "./data/figures/01/A.jpg", from_cwd=True)
+    mngs.io.save(ax.to_sigma(), "./data/figures/01/A.csv", from_cwd=True)
     return fig
 
 
@@ -99,8 +99,8 @@ def B():
     ax.plot(time, xxr[i_trial].T)
 
     # Saving
-    mngs.io.save(fig, "./data/figures/B.jpg", from_cwd=True)
-    mngs.io.save(ax.to_sigma(), "./data/figures/B.csv", from_cwd=True)
+    mngs.io.save(fig, "./data/figures/01/B.jpg", from_cwd=True)
+    mngs.io.save(ax.to_sigma(), "./data/figures/01/B.csv", from_cwd=True)
     return fig
 
 
@@ -131,8 +131,8 @@ def C():
     )
 
     # Saving
-    mngs.io.save(fig, "./data/figures/C.jpg", from_cwd=True)
-    mngs.io.save(ax.to_sigma(), "./data/figures/C.csv", from_cwd=True)
+    mngs.io.save(fig, "./data/figures/01/C.jpg", from_cwd=True)
+    mngs.io.save(ax.to_sigma(), "./data/figures/01/C.csv", from_cwd=True)
 
     return fig
 
@@ -158,8 +158,8 @@ def D():
     ax.plot(time, xi.T)
 
     # Saving
-    mngs.io.save(fig, "./data/figures/D.jpg", from_cwd=True)
-    mngs.io.save(ax.to_sigma(), "./data/figures/D.csv", from_cwd=True)
+    mngs.io.save(fig, "./data/figures/01/D.jpg", from_cwd=True)
+    mngs.io.save(ax.to_sigma(), "./data/figures/01/D.csv", from_cwd=True)
 
     return fig
 
@@ -191,8 +191,8 @@ def E():
     ax.plot(time, dist)
 
     # Saving
-    mngs.io.save(fig, "./data/figures/E.jpg", from_cwd=True)
-    mngs.io.save(ax.to_sigma(), "./data/figures/E.csv", from_cwd=True)
+    mngs.io.save(fig, "./data/figures/01/E.jpg", from_cwd=True)
+    mngs.io.save(ax.to_sigma(), "./data/figures/01/E.csv", from_cwd=True)
 
     return fig
 
