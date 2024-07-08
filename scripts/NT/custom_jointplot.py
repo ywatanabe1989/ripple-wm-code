@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 06:23:39 (ywatanabe)"
+# Time-stamp: "2024-07-09 06:42:37 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/custom_jointplot.py
 
 
@@ -87,107 +87,16 @@ def generate_log_norm_skewed_biased_data(size, skewness, bias, mean, sigma):
     return final_data + bias  # Add bias
 
 
-# def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
-#     fig, axes = plt.subplots(
-#         nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
-#     )
-
-#     # for ax in axes.flat:
-#     #     ax.set_box_aspect(1)
-
-#     # Find global min and max for consistent axes
-#     global_min_x, global_max_x = np.inf, -np.inf
-#     global_min_y, global_max_y = np.inf, -np.inf
-
-#     for df in data:
-#         global_min_x = min(global_min_x, df["factor_1"].min())
-#         global_max_x = max(global_max_x, df["factor_1"].max())
-#         global_min_y = min(global_min_y, df["factor_2"].min())
-#         global_max_y = max(global_max_y, df["factor_2"].max())
-
-#     for i, ax in enumerate(axes.flat):
-#         if i >= len(data):
-#             ax.axis("off")
-#             continue
-
-#         divider = make_axes_locatable(ax)
-#         ax_marg_x = divider.append_axes("top", size="20%", pad=0.02)
-#         ax_marg_y = divider.append_axes("right", size="20%", pad=0.02)
-
-#         # ax_marg_x.set_xticks([])
-#         # ax_marg_y.set_xticks([])
-
-#         sns.scatterplot(
-#             data=data[i],
-#             x="factor_1",
-#             y="factor_2",
-#             ax=ax,
-#             s=15,
-#             color="blue",
-#             alpha=0.6,
-#         )
-#         ax.set_xlim(global_min_x, global_max_x)
-#         ax.set_ylim(global_min_y, global_max_y)
-
-#         sns.kdeplot(
-#             data=data[i],
-#             x="factor_1",
-#             fill=True,
-#             ax=ax_marg_x,
-#             color="blue",
-#             bw_adjust=0.5,
-#             common_norm=True,
-#         )
-
-#         # x is vertical here
-#         sns.kdeplot(
-#             data=data[i],
-#             x="factor_2",
-#             fill=True,
-#             ax=ax_marg_y,
-#             color="blue",
-#             bw_adjust=0.5,
-#             common_norm=True,
-#             vertical=True,
-#         )
-
-#         # ax_marg_x.set_xlim(global_min_x, global_max_x)
-#         # # ax_marg_x.set_ylim(0, 10)
-
-#         # # x is horizontal here
-#         # # ax_marg_y.set_xlim(0, 10)
-#         # ax_marg_y.set_ylim(global_min_y, global_max_y)
-
-#         # Set the same density limits for all marginal plots
-#         ax_marg_x.set_xlim(ax.get_xlim())
-#         ax_marg_y.set_ylim(ax.get_ylim())
-
-#         ax_marg_x.set_ylim(0, max_density_x * 1.25)
-#         ax_marg_y.set_xlim(0, max_density_y * 1.25)
-
-#         # Hide spines
-#         mngs.plt.ax.hide_spines(ax_marg_x, bottom=False)
-#         mngs.plt.ax.hide_spines(ax_marg_y, left=False)
-
-#         # Hide ticks
-#         for ax_marg in [ax_marg_x, ax_marg_y]:
-#             ax_marg.set_xticks([])
-#             ax_marg.set_yticks([])
-#             ax_marg.set_xlabel(None)
-#             ax_marg.set_ylabel(None)
-
-
-#     plt.tight_layout()
-#     plt.show()
-
-
 def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
     fig, axes = plt.subplots(
         nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
     )
 
-    # for ax in axes.flat:
-    #     ax.set_box_aspect(1)
+    for ax in axes.flat:
+        ax.set_box_aspect(1)
+
+    # # Drawing the canvas to get actual sizes
+    # fig.canvas.draw()
 
     # Calculate global KDE maxima for consistent scale in density plots
     max_density_x = 0
@@ -214,8 +123,19 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
             continue
 
         divider = make_axes_locatable(ax)
+
         ax_marg_x = divider.append_axes("top", size="20%", pad=0.1)
+        ax_marg_x.set_box_aspect(0.2)  # Aspect ratio = 20% of the main axes
+
         ax_marg_y = divider.append_axes("right", size="20%", pad=0.1)
+        ax_marg_y.set_box_aspect(
+            0.2 ** (-1)
+        )  # Inverse of 20% aspect to match the vertical stretch
+
+        # dy = -7.5
+        # mngs.plt.ax.shift(ax_marg_x, dy=-100)
+        # mngs.plt.ax.shift(ax_marg_y, dy=dy)
+        # mngs.plt.ax.shift(ax, dy=dy)
 
         sns.scatterplot(
             data=data[i],
@@ -233,6 +153,7 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
             ax=ax_marg_x,
             color="blue",
             # bw_adjust=0.5,
+            common_norm=True,
         )
         kdeplot_y = sns.kdeplot(
             data=data[i],
@@ -242,6 +163,7 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
             color="blue",
             # bw_adjust=0.5,
             vertical=True,
+            common_norm=True,
         )
 
         ax_marg_x.set_xlim(ax.get_xlim())
@@ -264,94 +186,6 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
 
     plt.tight_layout()
     plt.show()
-
-
-# def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
-#     fig, axes = plt.subplots(
-#         nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
-#     )
-
-#     # Ensuring all main axes are square
-#     for ax in axes.flat:
-#         ax.set_box_aspect(1)  # Ensures square plots
-
-#     # Drawing the canvas to get actual sizes
-#     fig.canvas.draw()
-
-#     # Calculate maximum density for unified KDE scales
-#     max_density = 0
-#     for df in data:
-#         kde_x = gaussian_kde(df["factor_1"])
-#         kde_y = gaussian_kde(df["factor_2"])
-#         x_values = np.linspace(
-#             df["factor_1"].min(), df["factor_1"].max(), 1000
-#         )
-#         y_values = np.linspace(
-#             df["factor_2"].min(), df["factor_2"].max(), 1000
-#         )
-#         max_density = max(
-#             max_density, max(kde_x(x_values)), max(kde_y(y_values))
-#         )
-
-#     for ax, df in zip(axes.flat, data):
-#         # Setting up divider for marginal plots
-#         divider = make_axes_locatable(ax)
-
-#         # Marginal top plot
-#         ax_marg_x = divider.append_axes(
-#             "top", size="20%", pad=0.02
-#         )  # Reduced padding
-#         ax_marg_x.set_box_aspect(0.2)  # Aspect ratio = 20% of the main axes
-
-#         # Marginal right plot
-#         ax_marg_y = divider.append_axes(
-#             "right", size="20%", pad=0.02
-#         )  # Reduced padding
-#         ax_marg_y.set_box_aspect(
-#             5
-#         )  # Inverse of 20% aspect to match the vertical stretch
-
-#         # Scatter plot
-#         sns.scatterplot(
-#             data=df,
-#             x="factor_1",
-#             y="factor_2",
-#             ax=ax,
-#             color="blue",
-#             s=15,
-#             alpha=0.6,
-#         )
-
-#         # KDE plots
-#         sns.kdeplot(
-#             data=df, x="factor_1", fill=True, ax=ax_marg_x, color="blue"
-#         )
-#         sns.kdeplot(
-#             data=df,
-#             x="factor_2",
-#             fill=True,
-#             ax=ax_marg_y,
-#             color="blue",
-#             vertical=True,
-#         )
-
-#         # Set limits for KDE based on max density
-#         ax_marg_x.set_ylim(0, max_density)
-#         ax_marg_y.set_xlim(0, max_density)
-
-#         # Clean up axis
-#         mngs.plt.ax.hide_spines(ax_marg_x, bottom=False)
-#         mngs.plt.ax.hide_spines(ax_marg_y, left=False)
-
-#         # Hide ticks
-#         for ax_marg in [ax_marg_x, ax_marg_y]:
-#             ax_marg.set_xticks([])
-#             ax_marg.set_yticks([])
-#             ax_marg.set_xlabel(None)
-#             ax_marg.set_ylabel(None)
-
-#     plt.tight_layout()
-#     plt.show()
 
 
 def main():
