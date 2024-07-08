@@ -1,3 +1,29 @@
+TASK:
+  - match:
+      1
+    set_size:
+      4
+  - match:
+      1
+    set_size:
+      6
+  - match:
+      1
+    set_size:
+      8
+  - match:
+      2
+    set_size:
+      4
+  - match:
+      2
+    set_size:
+      6
+  - match:
+      2
+    set_size:
+      8
 
-TRIAL_SEC:
-  8
+MATCHES: [1,2]
+
+SET_SIZES: [4,6,8]

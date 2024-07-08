@@ -6,6 +6,8 @@ PHASES:
       1
     start:
       0
+    mid:
+      10
     end:
       20
   "Encoding":
@@ -15,6 +17,8 @@ PHASES:
       2
     start:
       20
+    mid:
+      40
     end:
       60
   "Maintenance":
@@ -24,6 +28,8 @@ PHASES:
       3
     start:
       60
+    mid:
+      80
     end:
       120
   "Retrieval":
@@ -33,6 +39,8 @@ PHASES:
       2
     start:
       120
+    mid:
+      140
     end:
       160
 

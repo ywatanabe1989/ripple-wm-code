@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-07 19:54:14 (ywatanabe)"
+# Time-stamp: "2024-07-07 21:11:20 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/figures/01.py
 
 
@@ -35,6 +35,7 @@ from tqdm import tqdm
 
 # sys.path = ["."] + sys.path
 from scripts import utils  # , load
+from scipy.stats import gaussian_kde
 
 """
 Warnings
@@ -56,7 +57,7 @@ Functions & Classes
 
 def A():
     # Loading
-    xx = mngs.io.load(
+    NT = mngs.io.load(
         eval(mngs.gen.replace(CONFIG.PATH.NT, CONFIG.REPRESENTATIVE))
     )
     # mngs.gen.replace(CONFIG.PATH.NT_Z, CONFIG.REPRESENTATIVE)
@@ -65,10 +66,7 @@ def A():
     )
 
     # Takes the first two factors
-    xx = xx[:, :2, :]
-    xx = mngs.gen.symlog(xx, 1e-3)
-
-    time = np.linspace(0, CONFIG.TRIAL.DUR_SEC, xx.shape[-1]) - 6
+    NT = NT[:, :2, :]
 
     # conditonal data
     params_grid = {"match": [1, 2], "set_size": [4, 6, 8]}
@@ -80,7 +78,6 @@ def A():
     )
 
     # Plotting
-    colors = utils.define_transitional_colors()
     fig, axes = mngs.plt.subplots(
         nrows=len(CONFIG.PHASES),
         ncols=len(conditions),
@@ -89,62 +86,26 @@ def A():
     )
     fig.supxyt("Factor 1", "Factor 2", None)
 
-    n_max_trials = 5
-
-    xmin = xx[:, 0, :].min()
-    xmax = xx[:, 0, :].max()
-    ymin = xx[:, 1, :].min()
-    ymax = xx[:, 1, :].max()
+    xmin = NT[:, 0, :].min()
+    xmax = NT[:, 0, :].max()
+    ymin = NT[:, 1, :].min()
+    ymax = NT[:, 1, :].max()
 
     # Conditions
     for i_cc, cc in enumerate(conditions):
-        xc = xx[mngs.pd.find_indi(trials_info, cc)]
-        # # Random
-        # for ii, i_rand_trial in enumerate(
-        #     np.random.permutation(range(len(xc)))
-        # ):
-
-        # # In order
-        # for ii, i_trial in enumerate(
-        #     range(len(xc))
-        # ):
-
+        NTc = NT[mngs.pd.find_indi(trials_info, cc)]
+        n_trials = len(NTc)
         # Phases
         for i_phase, phase_str in enumerate(CONFIG.PHASES):
             phase = CONFIG.PHASES[phase_str]
             ax = axes[i_phase, i_cc]
 
-            # ii += 1
-            # if ii > n_max_trials:
-            #     continue
-
-            # ################################################################################
-            # ## Scatter
-            # ################################################################################
-            # ax.scatter(
-            #     xc[i_rand_trial][0, phase.start : phase.end],
-            #     xc[i_rand_trial][1, phase.start : phase.end],
-            #     color=CC[phase.color],
-            #     s=10,
-            # )
-
-            # # Transitional Line plot
-            # for tt in range(xc.shape[-1] - 1):
-            #     if (phase.start <= tt) and (tt < phase.end):
-            #         ax.plot(
-            #             xc[i_rand_trial][0][tt : tt + 2],
-            #             xc[i_rand_trial][1][tt : tt + 2],
-            #             color=colors[tt + 1],
-            #         )
-
             ################################################################################
             ## KDE heatmap
             ################################################################################
-            from scipy.stats import gaussian_kde
-
             # Sample data
-            _x = xc[:, 0, phase.start : phase.end]  # (10, 20)
-            _y = xc[:, 1, phase.start : phase.end]  # (10, 20)
+            _x = NTc[:, 0, phase.start : phase.end]  # (10, 20)
+            _y = NTc[:, 1, phase.start : phase.end]  # (10, 20)
 
             # Flatten the arrays
             _x = _x.flatten()
@@ -164,7 +125,11 @@ def A():
 
             ax.imshow2d(f, cbar=None)
 
-        axes[0, i_cc].set_xyt(None, None, str(cc).replace(", ", "\n"))
+        axes[0, i_cc].set_xyt(
+            None,
+            None,
+            str(cc).replace(", ", "\n") + f"\nn = {n_trials} trials",
+        )
 
     # Saving
     mngs.io.save(fig, "./data/figures/02/A.jpg", from_cwd=True)
@@ -190,6 +155,7 @@ if __name__ == "__main__":
         plt,
         verbose=False,
         agg=True,
+        font_size_axis_label=6,
         font_size_title=6,
         alpha=0.5,
     )
