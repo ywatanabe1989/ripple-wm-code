@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 06:42:37 (ywatanabe)"
+# Time-stamp: "2024-07-09 06:46:38 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/custom_jointplot.py
 
 
@@ -185,7 +185,8 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
             ax_marg.set_ylabel(None)
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    mngs.io.save(fig, "fig.jpg")
 
 
 def main():
@@ -228,7 +229,7 @@ if __name__ == "__main__":
 
     # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
-        sys, plt, verbose=False
+        sys, plt, verbose=False, agg=True
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
