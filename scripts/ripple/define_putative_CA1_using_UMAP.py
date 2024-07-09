@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-05 20:12:15 (ywatanabe)"
+# Time-stamp: "2024-07-10 00:31:05 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_putative_CA1_using_UMAP.py
 
 
@@ -34,12 +34,12 @@ Functions & Classes
 
 
 def calc_silhouette_scores():
-    for roi in tqdm(CONFIG["ROIS"].keys()):
+    for region in tqdm(CONFIG.ROI.MTL.keys()):
         out = mngs.gen.listed_dict()
-        for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG["PATH_RIPPLE"])):
+        for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG.PATH.RIPPLE)):
             parsed = parse_lpath(lpath_ripple_p)
 
-            if not parsed["roi"] in CONFIG["ROIS"][roi]:
+            if not parsed["roi"] in CONFIG.ROI.MTL[region]:
                 continue
 
             sil_score = _calc_silhouette_score(lpath_ripple_p)
@@ -66,7 +66,7 @@ def calc_silhouette_scores():
         ):
             mngs.io.save(
                 var,
-                f"./data/silhouette_scores/{roi}/{sname}.csv",
+                f"./data/silhouette_scores/{region}/{sname}.csv",
                 from_cwd=True,
             )
 
@@ -158,7 +158,7 @@ def main():
 
 
 def determine_putative_CA1():
-    for roi in tqdm(CONFIG["ROIS"].keys()):
+    for roi in tqdm(CONFIG.ROI.ALL):
         # Loading
         df = mngs.io.load(f"./data/silhouette_scores/{roi}/raw.csv").drop(
             columns=["lpath_ripple"]

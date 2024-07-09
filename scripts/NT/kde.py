@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 22:02:29 (ywatanabe)"
+# Time-stamp: "2024-07-09 23:47:22 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
@@ -45,6 +45,7 @@ import logging
 from scripts import utils
 from scipy.stats import gaussian_kde
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import math
 
 """
 Warnings
@@ -131,7 +132,7 @@ def cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y):
         ax_marg.set_ylabel(None)
 
 
-def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
+def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
     # Data is expected to be listed list.
     assert mngs.gen.is_listed_X(data, list)
 
@@ -139,9 +140,6 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
     fig, axes = plt.subplots(
         nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
     )
-    # fig, axes = mngs.plt.subplots(
-    #     nrows=nrows, ncols=ncols, sharex=True, sharey=True
-    # )
 
     max_density_x, max_density_y = calc_max_density(data)
 
@@ -166,12 +164,21 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
             setsize_str = {4: "Set Size 4", 6: "Set Size 6", 8: "Set Size 8"}[
                 dd["set_size"].iloc[0]
             ]
-            label = f"{match_str}, " f"{setsize_str}"
+            label = f"{match_str}, {setsize_str}, {sample_type}"
             ax.set_title(f"{dd['phase'].iloc[0]}")
 
             # Main
+            # only mask scatter as kde needs NT values
+            if sample_type == "all":
+                indi = np.ones(len(dd)).astype(bool)
+            if "SWR" in sample_type:
+                indi = dd["within_ripple"]
+
+            nn = indi.sum()
+            label += f" (n = {nn:,})"
+
             sns.scatterplot(
-                data=dd,
+                data=dd[indi],
                 x="factor_1",
                 y="factor_2",
                 ax=ax,
@@ -183,23 +190,21 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
             ax = mngs.plt.ax.set_n_ticks(ax)
 
             sns.kdeplot(
-                data=dd,
+                data=dd[indi],
                 x="factor_1",
                 fill=True,
                 ax=ax_marg_x,
                 color=color,
                 common_norm=True,
-                # linewidth=2,
             )
             sns.kdeplot(
-                data=dd,
+                data=dd[indi],
                 x="factor_2",
                 fill=True,
                 ax=ax_marg_y,
                 color=color,
                 vertical=True,
                 common_norm=True,
-                # linewidth=2,
             )
 
         cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y)
@@ -215,20 +220,38 @@ def NT2df(NT, trials_info):
     conditions = list(
         mngs.gen.yield_grids({"match": [1, 2], "set_size": [4, 6, 8]})
     )
+
     for i_cc, cc in enumerate(conditions):
-        NTc = NT[mngs.pd.find_indi(trials_info, cc)]
+        indi = mngs.pd.find_indi(trials_info, cc)
+        NTc = NT[indi]
+
+        indi_bin = np.arange(NTc.shape[-1])[
+            np.newaxis, np.newaxis
+        ] * np.ones_like(NTc).astype(int)
+
         for phase_str in CONFIG.PHASES:
             NT_c_p = NTc[
                 ...,
                 CONFIG.PHASES[phase_str].start : CONFIG.PHASES[phase_str].end,
             ]
+            indi_trial = (
+                np.array(indi[indi].index).reshape(-1, 1, 1)
+                * np.ones_like(NT_c_p)
+            ).astype(int)
+
+            indi_bin_c_p = indi_bin[
+                ...,
+                CONFIG.PHASES[phase_str].start : CONFIG.PHASES[phase_str].end,
+            ]
+
             _df = pd.DataFrame(
                 {
                     "factor_1": NT_c_p[:, 0, :].reshape(-1),
                     "factor_2": NT_c_p[:, 1, :].reshape(-1),
+                    "i_trial": indi_trial[:, 0, :].reshape(-1),
+                    "i_bin": indi_bin_c_p[:, 0, :].reshape(-1),
                 }
             )
-
             cc.update({"phase": phase_str})
             for k, v in cc.items():
                 _df[k] = v
@@ -238,7 +261,29 @@ def NT2df(NT, trials_info):
     return dfs
 
 
-def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
+def add_ripple_tag(df, ripple):
+    ripple["i_trial"] = ripple.index - 1
+    ripple.set_index("i_trial", inplace=True)
+
+    df["within_ripple"] = False
+    ripple["start_bin"] = np.floor(
+        ripple.start_s / CONFIG.GPFA.BIN_SIZE_MS * 1e3
+    ).astype(int)
+    ripple["end_bin"] = np.ceil(
+        ripple.end_s / CONFIG.GPFA.BIN_SIZE_MS * 1e3
+    ).astype(int)
+    for i_rip, rip in ripple.iterrows():
+        indi = ((rip.start_bin <= df.i_bin) * (df.i_bin <= rip.end_bin)) * (
+            df.i_trial == rip.name
+        )
+        if not 0 < indi.sum():
+            __import__("ipdb").set_trace()
+        # assert 0 < indi.sum()
+        df.loc[indi, "within_ripple"] = True
+    return df
+
+
+def kde_plot(lpath_NT, sample_type, znorm=False, symlog=False, unbias=False):
     # Loading
     NT = mngs.io.load(lpath_NT)
 
@@ -262,6 +307,16 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
     NT = NT[:, :2, :]
 
     df = NT2df(NT, trials_info)
+
+    if sample_type == "SWR+":
+        ripple = mngs.io.load(mngs.gen.replace(CONFIG.PATH.RIPPLE, parsed))
+        df = add_ripple_tag(df, ripple)
+    elif sample_type == "SWR-":
+        ripple = mngs.io.load(
+            mngs.gen.replace(CONFIG.PATH.RIPPLE_MINUS, parsed)
+        )
+        df = add_ripple_tag(df, ripple)
+
     df = mngs.pd.merge_columns(df, *["phase", "match", "set_size"])
     df["color"] = ""
 
@@ -289,6 +344,7 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
         data_list,
         nrows,
         ncols,
+        sample_type,
         figsize=(15, 10),
     )
 
@@ -298,7 +354,7 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
     znorm_str = "NT" if not znorm else "NT_z"
     unbias_str = "unbiased" if unbias else "orig"
     spath_fig = (
-        f"./CA1/{znorm_str}/{scale}/{unbias_str}/"
+        f"./CA1/{znorm_str}/{scale}/{unbias_str}/{sample_type}/"
         + "_".join("-".join(item) for item in parsed.items())
         + ".jpg"
     )
@@ -310,20 +366,26 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
 def main():
     from itertools import product
 
-    for znorm, symlog, unbias in product(
+    for znorm, symlog, unbias, sample_type in product(
         # [False, True], [False, True], [False, True]
         [False],
         [False],
         [False],
+        ["all", "SWR+", "SWR-"],
     ):
-        # for znorm in [False, True]:
         if znorm:
             LPATHS_NT = mngs.gen.natglob(CONFIG.PATH.NT_Z)
         else:
             LPATHS_NT = mngs.gen.natglob(CONFIG.PATH.NT)
 
         for lpath_NT in LPATHS_NT:
-            kde_plot(lpath_NT, znorm=znorm, symlog=symlog, unbias=unbias)
+            kde_plot(
+                lpath_NT,
+                znorm=znorm,
+                symlog=symlog,
+                unbias=unbias,
+                sample_type=sample_type,
+            )
 
 
 if __name__ == "__main__":

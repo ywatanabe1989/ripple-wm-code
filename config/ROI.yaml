@@ -1,8 +1,10 @@
 ROI:
-  iEEG: ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]
-  HIP: ["AHL", "AHR", "PHL", "PHR"]
-  AMY: ["AL", "AR"]
-  EC: ["ECL", "ECR"]
+  ALL: ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]
+
+  MTL:
+    HIP: ["AHL", "AHR", "PHL", "PHR"]
+    AMY: ["AL", "AR"]
+    EC: ["ECL", "ECR"]
 
   CA1:
     - sub: "01"

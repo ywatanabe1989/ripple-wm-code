@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-03 00:33:16 (ywatanabe)"
+# Time-stamp: "2024-07-10 00:22:07 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -61,18 +61,22 @@ Functions & Classes
 
 
 def add_rel_peak_pos(row, xxr, fs_r):
-    _xxr = xxr[row.name][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
+    trial_number = row.name
+    i_trial = trial_number - 1
+    _xxr = xxr[i_trial][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
     return _xxr.argmax() / len(_xxr)
 
 
 def add_peak_amp_sd(row, xxr, fs_r):
-    _xxr = xxr[row.name][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
+    trial_number = row.name
+    i_trial = trial_number - 1
+    _xxr = xxr[i_trial][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
     return _xxr.max()
 
 
 def main():
-    LPATHS_RIPPLE = mngs.gen.natglob(CONFIG["PATH_RIPPLE"])
-    LPATHS_iEEG_RIPPLE_BAND = mngs.gen.natglob(CONFIG["PATH_iEEG_RIPPLE_BAND"])
+    LPATHS_RIPPLE = mngs.gen.natglob(CONFIG.PATH.RIPPLE)
+    LPATHS_iEEG_RIPPLE_BAND = mngs.gen.natglob(CONFIG.PATH.iEEG_RIPPLE_BAND)
 
     for lpath_ripple, lpath_iEEG in zip(
         LPATHS_RIPPLE, LPATHS_iEEG_RIPPLE_BAND
@@ -93,17 +97,27 @@ def main_lpath(lpath_ripple, lpath_iEEG):
     roi = parsed["roi"]
 
     # Trials info
-    trials_info = mngs.io.load(eval(CONFIG["PATH_TRIALS_INFO"]))
+    trials_info = mngs.io.load(
+        mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, parsed)
+    )
+    trials_info.set_index("trial_number", inplace=True)
 
     # Starts defining SWR- using SWR+, iEEG signal, and trials_info
     df_m = df_p[["start_s", "end_s", "duration_s"]].copy()
 
     # Shuffle ripple period (row) within a session as controls
     df_m = df_m.iloc[np.random.permutation(np.arange(len(df_m)))]
-    trial_numbers = [
-        random.randint(0, df_p.index.max() - 1) for _ in range(len(df_m))
-    ]
-    df_m.index = trial_numbers
+
+    # Override trial_number
+    new_trial_numbers = pd.Series(
+        np.random.choice(trials_info.index, len(df_m)).astype(int),
+        name="trial_number",
+    )
+
+    assert trials_info.index.min() <= new_trial_numbers.min()
+    assert new_trial_numbers.max() <= trials_info.index.max()
+
+    df_m.index = new_trial_numbers
     df_m = df_m.sort_index()
 
     # Adds metadata for the control data
