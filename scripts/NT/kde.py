@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 19:20:58 (ywatanabe)"
+# Time-stamp: "2024-07-09 22:02:29 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
@@ -65,12 +65,14 @@ Functions & Classes
 
 def gradiate_colors(base_color, n_colors):
     colors = []
+    factor = 1.0
     for ic in range(n_colors):
-        factor = 0.5**ic
         _c = factor * base_color
         _c[-1] = base_color[-1]
         _c = list(_c)
         colors.append(_c)
+        factor *= 0.8
+    colors = np.clip(colors, 0, 1)
     return colors[::-1]
 
 
@@ -111,10 +113,9 @@ def prepare_marginal_axes(ax):
 
 
 def cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y):
+    # Set the same density limits for all marginal plots
     ax_marg_x.set_xlim(ax.get_xlim())
     ax_marg_y.set_ylim(ax.get_ylim())
-
-    # Set the same density limits for all marginal plots
     ax_marg_x.set_ylim(0, max_density_x * 1.25)
     ax_marg_y.set_xlim(0, max_density_y * 1.25)
 
@@ -138,6 +139,9 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
     fig, axes = plt.subplots(
         nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
     )
+    # fig, axes = mngs.plt.subplots(
+    #     nrows=nrows, ncols=ncols, sharex=True, sharey=True
+    # )
 
     max_density_x, max_density_y = calc_max_density(data)
 
@@ -171,7 +175,7 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
                 x="factor_1",
                 y="factor_2",
                 ax=ax,
-                s=5,
+                s=10,
                 color=color,
                 alpha=0.6,
                 label=label,
@@ -185,6 +189,7 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
                 ax=ax_marg_x,
                 color=color,
                 common_norm=True,
+                # linewidth=2,
             )
             sns.kdeplot(
                 data=dd,
@@ -194,6 +199,7 @@ def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
                 color=color,
                 vertical=True,
                 common_norm=True,
+                # linewidth=2,
             )
 
         cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y)
@@ -244,6 +250,7 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
         NT = mngs.gen.symlog(NT, 1e-5)
 
     parsed = utils.parse_lpath(lpath_NT)
+
     trials_info = mngs.io.load(
         eval(mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, parsed))
     )
@@ -285,6 +292,8 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
         figsize=(15, 10),
     )
 
+    fig.suptitle(str(parsed))
+
     scale = "linear" if not symlog else "symlog"
     znorm_str = "NT" if not znorm else "NT_z"
     unbias_str = "unbiased" if unbias else "orig"
@@ -302,7 +311,10 @@ def main():
     from itertools import product
 
     for znorm, symlog, unbias in product(
-        [False, True], [False, True], [False, True]
+        # [False, True], [False, True], [False, True]
+        [False],
+        [False],
+        [False],
     ):
         # for znorm in [False, True]:
         if znorm:
@@ -312,11 +324,6 @@ def main():
 
         for lpath_NT in LPATHS_NT:
             kde_plot(lpath_NT, znorm=znorm, symlog=symlog, unbias=unbias)
-
-    # for lpath_NT in LPATHS_NT:
-    # for symlog in [False, True]:
-    # kde_plot(lpath_NT, znorm=znorm, symlog=symlog)
-    # plt.close()
 
 
 if __name__ == "__main__":
@@ -333,9 +340,9 @@ if __name__ == "__main__":
         plt,
         verbose=False,
         agg=True,
-        font_size_axis_label=6,
-        font_size_title=6,
-        alpha=0.75,
+        # font_size_axis_label=6,
+        # font_size_title=6,
+        alpha=0.3,
         fig_scale=2,
     )
     main()
