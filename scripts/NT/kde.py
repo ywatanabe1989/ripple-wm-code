@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 23:47:22 (ywatanabe)"
+# Time-stamp: "2024-07-10 01:19:55 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
@@ -263,6 +263,7 @@ def NT2df(NT, trials_info):
 
 def add_ripple_tag(df, ripple):
     ripple["i_trial"] = ripple.index - 1
+
     ripple.set_index("i_trial", inplace=True)
 
     df["within_ripple"] = False
@@ -278,6 +279,7 @@ def add_ripple_tag(df, ripple):
         )
         if not 0 < indi.sum():
             __import__("ipdb").set_trace()
+
         # assert 0 < indi.sum()
         df.loc[indi, "within_ripple"] = True
     return df

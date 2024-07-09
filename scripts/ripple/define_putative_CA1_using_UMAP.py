@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-10 00:31:05 (ywatanabe)"
+# Time-stamp: "2024-07-10 01:17:11 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_putative_CA1_using_UMAP.py
 
 
@@ -158,11 +158,12 @@ def main():
 
 
 def determine_putative_CA1():
-    for roi in tqdm(CONFIG.ROI.ALL):
+    for region in tqdm(CONFIG.ROI.MTL):
         # Loading
-        df = mngs.io.load(f"./data/silhouette_scores/{roi}/raw.csv").drop(
+        df = mngs.io.load(f"./data/silhouette_scores/{region}/raw.csv").drop(
             columns=["lpath_ripple"]
         )
+        __import__("ipdb").set_trace()
 
         # Calculation of count, mean, and standard deviation for 'silhouette_score' across sessions
         df = (
@@ -183,11 +184,11 @@ def determine_putative_CA1():
 
         # Saving
         mngs.io.save(
-            fig, f"./data/silhouette_scores/{roi}/fig.jpg", from_cwd=True
+            fig, f"./data/silhouette_scores/{region}/fig.jpg", from_cwd=True
         )
         mngs.io.save(
             ax.to_sigma(),
-            f"./data/silhouette_scores/{roi}/fig.csv",
+            f"./data/silhouette_scores/{region}/fig.csv",
             from_cwd=True,
         )
 
