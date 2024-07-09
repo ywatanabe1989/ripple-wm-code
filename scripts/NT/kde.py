@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 04:07:50 (ywatanabe)"
+# Time-stamp: "2024-07-09 19:20:58 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
@@ -43,7 +43,8 @@ import logging
 
 # sys.path = ["."] + sys.path
 from scripts import utils
-
+from scipy.stats import gaussian_kde
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 """
 Warnings
@@ -62,40 +63,144 @@ Functions & Classes
 """
 
 
-# def _calc_kde(NTc, start, end, xmin, xmax, ymin, ymax, take_diff=False):
-#     # Sample data
-#     _x = NTc[:, 0, start:end]  # (10, 20)
-#     _y = NTc[:, 1, start:end]  # (10, 20)
+def gradiate_colors(base_color, n_colors):
+    colors = []
+    for ic in range(n_colors):
+        factor = 0.5**ic
+        _c = factor * base_color
+        _c[-1] = base_color[-1]
+        _c = list(_c)
+        colors.append(_c)
+    return colors[::-1]
 
-#     if take_diff:
-#         _start, _end = (
-#             CONFIG.PHASES.Fixation.start,
-#             CONFIG.PHASES.Fixation.end,
-#         )
-#         _x_f = NTc[:, 0, _start:_end]
-#         _y_f = NTc[:, 1, _start:_end]
 
-#         _x -= _x_f
-#         _y -= _y_f
+def calc_max_density(data):
+    # Calculate global KDE maxima for consistent scale in density plots
+    max_density_x = 0
+    max_density_y = 0
+    for _data in data:
+        for df in _data:
+            kde_x = gaussian_kde(df["factor_1"])
+            kde_y = gaussian_kde(df["factor_2"])
+            x_values = np.linspace(
+                df["factor_1"].min(), df["factor_1"].max(), 1000
+            )
+            y_values = np.linspace(
+                df["factor_2"].min(), df["factor_2"].max(), 1000
+            )
+            max_density_x = max(max_density_x, max(kde_x(x_values)))
+            max_density_y = max(max_density_y, max(kde_y(y_values)))
 
-#     # Flatten the arrays
-#     _x = _x.flatten()
-#     _y = _y.flatten()
+    # Global max density and override them for compatibility
+    max_density = max(max_density_x, max_density_y)
+    max_density_x = max_density_y = max_density
 
-#     # Creating the grid
-#     _xx, _yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-#     positions = np.vstack([_xx.ravel(), _yy.ravel()])
+    return max_density_x, max_density_y
 
-#     # Fit the KDE
-#     values = np.vstack([_x, _y])
 
-#     try:
-#         kde = gaussian_kde(values)
-#         f = np.reshape(kde(positions).T, _xx.shape)
-#         return f
+def prepare_marginal_axes(ax):
+    divider = make_axes_locatable(ax)
 
-#     except Exception as e:
-#         logging.warn(e)
+    ax_marg_x = divider.append_axes("top", size="20%", pad=0.1)
+    ax_marg_x.set_box_aspect(0.2)
+
+    ax_marg_y = divider.append_axes("right", size="20%", pad=0.1)
+    ax_marg_y.set_box_aspect(0.2 ** (-1))
+
+    return ax_marg_x, ax_marg_y
+
+
+def cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y):
+    ax_marg_x.set_xlim(ax.get_xlim())
+    ax_marg_y.set_ylim(ax.get_ylim())
+
+    # Set the same density limits for all marginal plots
+    ax_marg_x.set_ylim(0, max_density_x * 1.25)
+    ax_marg_y.set_xlim(0, max_density_y * 1.25)
+
+    # Hide spines
+    mngs.plt.ax.hide_spines(ax_marg_x, bottom=False)
+    mngs.plt.ax.hide_spines(ax_marg_y, left=False)
+
+    # Hide ticks
+    for ax_marg in [ax_marg_x, ax_marg_y]:
+        ax_marg.set_xticks([])
+        ax_marg.set_yticks([])
+        ax_marg.set_xlabel(None)
+        ax_marg.set_ylabel(None)
+
+
+def custom_joint_plot(data, nrows, ncols, figsize=(15, 10)):
+    # Data is expected to be listed list.
+    assert mngs.gen.is_listed_X(data, list)
+
+    # Main
+    fig, axes = plt.subplots(
+        nrows=nrows, ncols=ncols, figsize=figsize, sharex=True, sharey=True
+    )
+
+    max_density_x, max_density_y = calc_max_density(data)
+
+    for i, ax in enumerate(axes.flat):
+        if i >= len(data):
+            ax.axis("off")
+            continue
+
+        ax.set_box_aspect(1)
+
+        ax_marg_x, ax_marg_y = prepare_marginal_axes(ax)
+
+        for i_dd, dd in enumerate(data[i]):
+
+            # Color
+            base_color = np.array(CC[CONFIG.PHASES[dd.phase.iloc[0]].color])
+            n_queries = len(data[i])
+            color = gradiate_colors(base_color, n_queries)[i_dd]
+
+            # Label and Title
+            match_str = {1: "Match IN", 2: "Mismatch OUT"}[dd["match"].iloc[0]]
+            setsize_str = {4: "Set Size 4", 6: "Set Size 6", 8: "Set Size 8"}[
+                dd["set_size"].iloc[0]
+            ]
+            label = f"{match_str}, " f"{setsize_str}"
+            ax.set_title(f"{dd['phase'].iloc[0]}")
+
+            # Main
+            sns.scatterplot(
+                data=dd,
+                x="factor_1",
+                y="factor_2",
+                ax=ax,
+                s=5,
+                color=color,
+                alpha=0.6,
+                label=label,
+            )
+            ax = mngs.plt.ax.set_n_ticks(ax)
+
+            sns.kdeplot(
+                data=dd,
+                x="factor_1",
+                fill=True,
+                ax=ax_marg_x,
+                color=color,
+                common_norm=True,
+            )
+            sns.kdeplot(
+                data=dd,
+                x="factor_2",
+                fill=True,
+                ax=ax_marg_y,
+                color=color,
+                vertical=True,
+                common_norm=True,
+            )
+
+        cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y)
+
+    plt.tight_layout()
+
+    return fig
 
 
 def NT2df(NT, trials_info):
@@ -151,85 +256,34 @@ def kde_plot(lpath_NT, znorm=False, symlog=False, unbias=False):
 
     df = NT2df(NT, trials_info)
     df = mngs.pd.merge_columns(df, *["phase", "match", "set_size"])
+    df["color"] = ""
 
     # Plotting
+    data_list = []
     n_phases = len(CONFIG.PHASES)
     n_matches = len(CONFIG.MATCHES)
-    fig, axes = plt.subplots(
-        nrows=n_matches, ncols=n_phases, sharex=True, sharey=True
-    )
-
-    for i_phase in range(n_phases):
-        for i_match in range(n_matches):
-
-            ax = axes[i_match, i_phase]
+    for i_match in range(n_matches):
+        for i_phase in range(n_phases):
 
             phase = list(CONFIG.PHASES.keys())[i_phase]
             match = list(CONFIG.MATCHES)[i_match]
 
             queries = [
                 f"{phase}_{match}_4",
-                # f"{phase}_{match}_6",
+                f"{phase}_{match}_6",
                 f"{phase}_{match}_8",
             ]
 
-            base_color = np.array(CC[CONFIG.PHASES[phase].color])
+            data = [df[df["phase_match_set_size"] == qq] for qq in queries]
+            data_list.append(data)
 
-            colors = []
-            for ic in range(len(queries)):
-                factor = 0.5**ic
-
-                _c = factor * base_color
-                _c[-1] = base_color[-1]
-                _c = list(_c)
-                colors.append(_c)
-
-            # Main scatter plot
-            sns.scatterplot(
-                data=df[df["phase_match_set_size"].isin(queries)],
-                x="factor_1",
-                y="factor_2",
-                hue="phase_match_set_size",
-                palette=colors,
-                ax=ax,
-                legend=False,
-                s=1,
-            )
-
-            # Adding marginal KDEs
-            [
-                sns.kdeplot(
-                    data=df[df["phase_match_set_size"] == qq],
-                    x="factor_1",
-                    ax=ax,
-                    legend=False,
-                    common_norm=True,
-                    color=colors[i_qq],
-                )
-                for i_qq, qq in enumerate(queries)
-            ]
-            [
-                sns.kdeplot(
-                    data=df[df["phase_match_set_size"] == qq],
-                    x="factor_2",
-                    ax=ax,
-                    legend=False,
-                    common_norm=True,
-                    color=colors[i_qq],
-                    vertical=True,
-                )
-                for i_qq, qq in enumerate(queries)
-            ]
-
-            ax._legend = None
-
-    fig.tight_layout()
-
-    # Saving
-    # spath_fig = lpath_NT.replace("/NT/", "/NT/kde/").replace(".npy", ".jpg")
-    # mngs.io.save(fig, spath_fig, from_cwd=True, dry_run=False)
-    # spath_csv = spath_fig.replace(".jpg", ".csv")
-    # mngs.io.save(ax.to_sigma(), spath_csv, from_cwd=True, dry_run=False)
+    nrows, ncols = n_matches, n_phases
+    fig = custom_joint_plot(
+        data_list,
+        nrows,
+        ncols,
+        figsize=(15, 10),
+    )
 
     scale = "linear" if not symlog else "symlog"
     znorm_str = "NT" if not znorm else "NT_z"
@@ -281,7 +335,7 @@ if __name__ == "__main__":
         agg=True,
         font_size_axis_label=6,
         font_size_title=6,
-        alpha=0.9,
+        alpha=0.75,
         fig_scale=2,
     )
     main()
