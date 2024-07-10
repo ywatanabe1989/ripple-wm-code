@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-11 05:49:54 (ywatanabe)"
+# Time-stamp: "2024-07-11 07:55:05 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
@@ -195,8 +195,9 @@ def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
 
     # Main
     fig, axes, axes_marg_x, axes_marg_y = prepare_fig(nrows, ncols, figsize)
-    for i, (ax, ax_marg_x, ax_marg_y) in enumerate(
-        zip(axes.flat, axes_marg_x.flat, axes_marg_y.flat)
+    fig_mngs, axes_mngs = mngs.plt.subplots(nrows, ncols)
+    for i, (ax, ax_marg_x, ax_marg_y, ax_mngs) in enumerate(
+        zip(axes.flat, axes_marg_x.flat, axes_marg_y.flat, axes_mngs.flat)
     ):
         if i >= len(data):
             ax.axis("off")
@@ -214,9 +215,12 @@ def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
             color = mngs.plt.gradiate_color(base_color, n=n_split)[i_color]
 
             # Label and Title
-            match_str = {1: "IN", 2: "OUT"}[dd["match"].iloc[0]]
+            match = dd["match"].iloc[0]
+            set_size = dd["set_size"].iloc[0]
+
+            match_str = {1: "IN", 2: "OUT"}[match]
             setsize_str = {4: "Set Size 4", 6: "Set Size 6", 8: "Set Size 8"}[
-                dd["set_size"].iloc[0]
+                set_size
             ]
             label = f"{match_str}, {setsize_str}, {sample_type}"
             ax.set_title(f"{dd['phase'].iloc[0]}")
@@ -240,6 +244,15 @@ def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
                 alpha=0.6,
                 label=label,
             )
+            ax_mngs.scatter(
+                dd[indi]["factor_1"],
+                dd[indi]["factor_2"],
+                s=10,
+                color=color,
+                alpha=0.6,
+                label=label,
+                id=f"match: {match}, set_size: {set_size}, sample_type: {sample_type}",
+            )
 
             for _xy, _ax_marg, _vertical in zip(
                 ["factor_1", "factor_2"], [ax_marg_x, ax_marg_y], [False, True]
@@ -255,11 +268,18 @@ def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
                     linewidth=0.5,
                 )
 
+                # ax_mngs.kde(
+                #     dd[indi][_xy],
+                #     color=color,
+                #     linewidth=0.5,
+                #     id=label,
+                # )
+
         cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y)
 
     plt.tight_layout()
 
-    return fig, axes, axes_marg_x, axes_marg_y
+    return fig, axes, axes_marg_x, axes_marg_y, axes_mngs
 
 
 def kde_plot(lpath_NT, sample_type, znorm=False, symlog=False, unbias=False):
@@ -315,7 +335,7 @@ def kde_plot(lpath_NT, sample_type, znorm=False, symlog=False, unbias=False):
             data = [df[df["phase_match_set_size"] == qq] for qq in queries]
             data_list.append(data)
 
-    fig, axes, axes_marg_x, axes_marg_y = custom_joint_plot(
+    fig, axes, axes_marg_x, axes_marg_y, axes_mngs = custom_joint_plot(
         data_list,
         n_matches,
         n_phases,
@@ -330,9 +350,13 @@ def kde_plot(lpath_NT, sample_type, znorm=False, symlog=False, unbias=False):
     znorm_str = "NT" if not znorm else "NT_z"
     unbias_str = "unbiased" if unbias else "orig"
     spath_fig = (
-        f"./CA1/{znorm_str}/{scale}/{unbias_str}/{sample_type}/"
+        f"./data/CA1/{znorm_str}/{scale}/{unbias_str}/{sample_type}/"
         + "_".join("-".join(item) for item in parsed.items())
         + ".jpg"
+    )
+
+    mngs.io.save(
+        axes_mngs.to_sigma(), spath_fig.replace(".jpg", ".csv"), from_cwd=True
     )
 
     return fig, spath_fig, axes, axes_marg_x, axes_marg_y
@@ -386,7 +410,7 @@ def main():
             sharey(*cache["axes_marg_y"], ylim=ylim_main)
 
             for fig, spath_fig in zip(cache["fig"], cache["spath_fig"]):
-                mngs.io.save(fig, spath_fig, from_cwd=False, dry_run=False)
+                mngs.io.save(fig, spath_fig, from_cwd=True, dry_run=False)
 
             plt.close()
 
