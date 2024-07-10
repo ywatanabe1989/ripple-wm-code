@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-10 00:22:07 (ywatanabe)"
+# Time-stamp: "2024-07-10 12:16:20 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
 
 
@@ -58,6 +58,15 @@ CONFIG = mngs.gen.load_configs()
 """
 Functions & Classes
 """
+
+
+def add_peak_s(row, xxr, fs_r):
+    trial_number = row.name
+    i_trial = trial_number - 1
+    _xxr = xxr[i_trial][int(row.start_s * fs_r) : int(row.end_s * fs_r)]
+    peak_pos = _xxr.argmax()
+    peak_s = row.start_s + peak_pos / fs_r
+    return peak_s
 
 
 def add_rel_peak_pos(row, xxr, fs_r):
@@ -122,6 +131,11 @@ def main_lpath(lpath_ripple, lpath_iEEG):
 
     # Adds metadata for the control data
     df_m = transfer_metadata(df_m, trials_info)
+
+    # peak_s
+    df_m["peak_s"] = df_m.apply(
+        partial(add_peak_s, xxr=xxr, fs_r=fs_r), axis=1
+    )
 
     # rel_peak_pos
     df_m["rel_peak_pos"] = df_m.apply(
