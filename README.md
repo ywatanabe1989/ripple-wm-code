@@ -8,7 +8,7 @@
 ./scripts/demographic/all.sh
 ./scripts/ripple/all.sh
 ./scripts/NT/all.sh
-./scripts/NT/kde_predefined_axes.py
+./scripts/NT/kde.py
 ```
 
 #### Figures

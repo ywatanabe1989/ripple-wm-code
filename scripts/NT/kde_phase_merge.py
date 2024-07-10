@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-11 05:49:54 (ywatanabe)"
+# Time-stamp: "2024-07-11 04:51:19 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
@@ -12,24 +12,43 @@ This script does XYZ.
 """
 Imports
 """
+import os
+import re
 import sys
 
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import mngs
+from IPython.lib import deepreload
+
+with mngs.gen.suppress_output():
+    deepreload.reload(mngs)
+
+# mngs.gen.reload(mngs)
 import numpy as np
 import pandas as pd
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from icecream import ic
+from natsort import natsorted
+from glob import glob
+from pprint import pprint
+import warnings
+from tqdm import tqdm
+import xarray as xr
 from scipy.stats import gaussian_kde
+import logging
 
-from mngs.plt.ax import (
-    get_global_xlim,
-    get_global_ylim,
-    sharex,
-    sharey,
-    add_marginal_ax,
-)
-import utils
+# sys.path = ["."] + sys.path
+from scripts import utils
+from scipy.stats import gaussian_kde
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import math
+
 from itertools import product
+from mngs.plt.ax import get_global_xlim, get_global_ylim, sharex, sharey
 
 """
 Warnings
@@ -49,6 +68,7 @@ Functions & Classes
 
 
 def calc_max_density(data):
+    # Calculate global KDE maxima for consistent scale in density plots
     max_density_x = 0
     max_density_y = 0
     for _data in data:
@@ -71,6 +91,18 @@ def calc_max_density(data):
     return max_density_x, max_density_y
 
 
+def add_marginal_axes(ax):
+    divider = make_axes_locatable(ax)
+
+    ax_marg_x = divider.append_axes("top", size="20%", pad=0.1)
+    ax_marg_x.set_box_aspect(0.2)
+
+    ax_marg_y = divider.append_axes("right", size="20%", pad=0.1)
+    ax_marg_y.set_box_aspect(0.2 ** (-1))
+
+    return ax_marg_x, ax_marg_y
+
+
 def cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y):
     ax = mngs.plt.ax.set_n_ticks(ax)
     ax_marg_x = mngs.plt.ax.set_n_ticks(ax_marg_x)
@@ -89,7 +121,9 @@ def cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y):
 
 
 def prepare_fig(nrows, ncols, figsize):
-    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
+    fig, axes = plt.subplots(
+        nrows=nrows, ncols=ncols, figsize=figsize  # , sharex=True, sharey=True
+    )
     axes_marg_x = np.full(axes.shape, np.nan).astype(object)
     axes_marg_y = np.full(axes.shape, np.nan).astype(object)
 
@@ -97,22 +131,98 @@ def prepare_fig(nrows, ncols, figsize):
         for jj in range(axes.shape[1]):
             ax = axes[ii, jj]
             ax.set_box_aspect(1)
-            ax_marg_x = add_marginal_ax(ax, place="top", size=0.2, pad=0.1)
-            ax_marg_y = add_marginal_ax(ax, place="right", size=0.2, pad=0.1)
+            ax_marg_x, ax_marg_y = add_marginal_axes(ax)
             axes_marg_x[ii, jj] = ax_marg_x
             axes_marg_y[ii, jj] = ax_marg_y
 
     return fig, axes, axes_marg_x, axes_marg_y
 
 
+def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
+    # Data is expected to be listed list.
+    assert mngs.gen.is_listed_X(data, list)
+
+    # Calc lims of marginal axes
+    max_density_x, max_density_y = calc_max_density(data)
+
+    # Main
+    fig, axes, axes_marg_x, axes_marg_y = prepare_fig(nrows, ncols, figsize)
+    for i, (ax, ax_marg_x, ax_marg_y) in enumerate(
+        zip(axes.flat, axes_marg_x.flat, axes_marg_y.flat)
+    ):
+        if i >= len(data):
+            ax.axis("off")
+            continue
+
+        for i_dd, dd in enumerate(data[i]):
+
+            # Base Color
+            base_color = np.array(CC[CONFIG.PHASES[dd.phase.iloc[0]].color])
+            # Gradient color
+            n_queries = len(data[i])
+            ss = dd["set_size"].iloc[0]
+            n_split = n_queries * 4
+            i_color = {4: n_split - 1, 6: n_split // 2, 8: 0}[ss]
+            color = mngs.plt.gradiate_color(base_color, n=n_split)[i_color]
+
+            # Label and Title
+            match_str = {1: "IN", 2: "OUT"}[dd["match"].iloc[0]]
+            setsize_str = {4: "Set Size 4", 6: "Set Size 6", 8: "Set Size 8"}[
+                dd["set_size"].iloc[0]
+            ]
+            label = f"{match_str}, {setsize_str}, {sample_type}"
+            ax.set_title(f"{dd['phase'].iloc[0]}")
+
+            # Main
+            # only mask scatter as kde needs NT values
+            if sample_type == "all":
+                indi = np.ones(len(dd)).astype(bool)
+            if "SWR" in sample_type:
+                indi = dd["within_ripple"]
+
+            nn = indi.sum()
+            label += f" (n = {nn:,})"
+
+            sns.scatterplot(
+                data=dd[indi],
+                x="factor_1",
+                y="factor_2",
+                ax=ax,
+                s=10,
+                color=color,
+                alpha=0.6,
+                label=label,
+            )
+
+            for _xy, _ax_marg, _vertical in zip(
+                ["factor_1", "factor_2"], [ax_marg_x, ax_marg_y], [False, True]
+            ):
+                sns.kdeplot(
+                    data=dd[indi],
+                    x=_xy,
+                    fill=False,
+                    ax=_ax_marg,
+                    color=color,
+                    common_norm=True,
+                    vertical=_vertical,
+                    linewidth=0.5,
+                )
+
+        cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y)
+
+    plt.tight_layout()
+
+    return fig, axes, axes_marg_x, axes_marg_y
+
+
 def NT2df(NT, trials_info):
     dfs = []
-
     # Conditonal data
     conditions = list(
         mngs.gen.yield_grids({"match": [1, 2], "set_size": [4, 6, 8]})
     )
 
+    indi_all = []
     for i_cc, cc in enumerate(conditions):
         indi = mngs.pd.find_indi(trials_info, cc)
         indi = np.array(indi[indi].index)
@@ -154,10 +264,10 @@ def NT2df(NT, trials_info):
 
 
 def add_ripple_tag(df, ripple):
+    # ripple
     ripple["i_trial"] = ripple.index - 1
     ripple.set_index("i_trial", inplace=True)
 
-    # bin
     ripple["start_bin"] = np.floor(
         ripple.start_s / CONFIG.GPFA.BIN_SIZE_MS * 1e3
     ).astype(int)
@@ -179,93 +289,22 @@ def add_ripple_tag(df, ripple):
         )
         indi = indi_trial * indi_bin
 
-        assert 0 < indi.sum()
+        # indi = ((rip.start_bin <= df.i_bin) * (df.i_bin <= rip.end_bin)) * (
+        #     df.i_trial == rip.name
+        # )
+        # n_bins = rip.end_bin - rip.start_bin
+
+        assert 0 < indi.sum()  # <= n_bins + 1
+        # assert indi.sum() == 1
+        # print(indi.sum())
 
         df.loc[indi, "within_ripple"] = True
-
     return df
-
-
-def custom_joint_plot(data, nrows, ncols, sample_type, figsize=(15, 10)):
-    # Data is expected to be listed list.
-    assert mngs.gen.is_listed_X(data, list)
-
-    # Calc lims of marginal axes
-    max_density_x, max_density_y = calc_max_density(data)
-
-    # Main
-    fig, axes, axes_marg_x, axes_marg_y = prepare_fig(nrows, ncols, figsize)
-    for i, (ax, ax_marg_x, ax_marg_y) in enumerate(
-        zip(axes.flat, axes_marg_x.flat, axes_marg_y.flat)
-    ):
-        if i >= len(data):
-            ax.axis("off")
-            continue
-
-        for i_dd, dd in enumerate(data[i]):
-            # Base Color
-            base_color = np.array(CC[CONFIG.PHASES[dd.phase.iloc[0]].color])
-
-            # Gradient color
-            n_queries = len(data[i])
-            ss = dd["set_size"].iloc[0]
-            n_split = n_queries * 4
-            i_color = {4: n_split - 1, 6: n_split // 2, 8: 0}[ss]
-            color = mngs.plt.gradiate_color(base_color, n=n_split)[i_color]
-
-            # Label and Title
-            match_str = {1: "IN", 2: "OUT"}[dd["match"].iloc[0]]
-            setsize_str = {4: "Set Size 4", 6: "Set Size 6", 8: "Set Size 8"}[
-                dd["set_size"].iloc[0]
-            ]
-            label = f"{match_str}, {setsize_str}, {sample_type}"
-            ax.set_title(f"{dd['phase'].iloc[0]}")
-
-            # Main
-            if sample_type == "all":
-                indi = np.ones(len(dd)).astype(bool)
-            if "SWR" in sample_type:
-                indi = dd["within_ripple"]
-
-            nn = indi.sum()
-            label += f" (n = {nn:,})"
-
-            sns.scatterplot(
-                data=dd[indi],
-                x="factor_1",
-                y="factor_2",
-                ax=ax,
-                s=10,
-                color=color,
-                alpha=0.6,
-                label=label,
-            )
-
-            for _xy, _ax_marg, _vertical in zip(
-                ["factor_1", "factor_2"], [ax_marg_x, ax_marg_y], [False, True]
-            ):
-                sns.kdeplot(
-                    data=dd[indi],
-                    x=_xy,
-                    fill=False,
-                    ax=_ax_marg,
-                    color=color,
-                    common_norm=True,
-                    vertical=_vertical,
-                    linewidth=0.5,
-                )
-
-        cleanup_axes(ax, ax_marg_x, ax_marg_y, max_density_x, max_density_y)
-
-    plt.tight_layout()
-
-    return fig, axes, axes_marg_x, axes_marg_y
 
 
 def kde_plot(lpath_NT, sample_type, znorm=False, symlog=False, unbias=False):
     # Loading
     NT = mngs.io.load(lpath_NT)
-
     # Takes the first two factors
     NT = NT[:, :2, :]
 
@@ -340,6 +379,7 @@ def kde_plot(lpath_NT, sample_type, znorm=False, symlog=False, unbias=False):
 
 def main():
     for znorm, symlog, unbias in product(
+        # [False, True], [False, True], [False, True]
         [False],
         [False],
         [False],
@@ -353,8 +393,7 @@ def main():
         for ca1_region in CONFIG.ROI.CA1:
             lpath_NT = mngs.gen.replace(LPATH_EXP, ca1_region)
             parsed = utils.parse_lpath(lpath_NT)
-
-            if parsed not in CONFIG.ROI.CA1:
+            if not parsed in CONFIG.ROI.CA1:
                 continue
 
             cache = mngs.gen.listed_dict()
@@ -374,7 +413,7 @@ def main():
                 cache["axes_marg_x"].append(axes_marg_x)
                 cache["axes_marg_y"].append(axes_marg_y)
 
-            # Share xlim and ylim
+            # xlim and ylim
             # main axes
             xlim_main = get_global_xlim(*cache["axes"])
             ylim_main = get_global_ylim(*cache["axes"])
@@ -385,10 +424,35 @@ def main():
             sharex(*cache["axes_marg_x"], xlim=xlim_main)
             sharey(*cache["axes_marg_y"], ylim=ylim_main)
 
+            # # marginal axes, height
+            # ylim_marg_x = get_global_ylim(*cache["axes_marg_x"])
+            # xlim_marg_y = get_global_xlim(*cache["axes_marg_y"])
+            # height = max(max(ylim_marg_x), max(xlim_marg_y))
+            # sharey(*cache["axes_marg_x"], ylim=(0, height))
+            # sharex(*cache["axes_marg_y"], xlim=(0, height))
+
             for fig, spath_fig in zip(cache["fig"], cache["spath_fig"]):
                 mngs.io.save(fig, spath_fig, from_cwd=False, dry_run=False)
 
             plt.close()
+    # # xlim and ylim
+    # # main axes
+    # xlim_main = get_global_xlim(axes)
+    # ylim_main = get_global_ylim(axes)
+    # sharex(axes, xlim=xlim_main)
+    # sharey(axes, ylim=ylim_main)
+
+    # # marginal axes
+    # sharex(axes_marg_x, xlim=xlim_main)
+    # sharey(axes_marg_y, ylim=ylim_main)
+
+    # # marginal axes, height
+    # ylim_marg_x = get_global_ylim(axes_marg_x)
+    # xlim_marg_y = get_global_xlim(axes_marg_y)
+    # height = max(max(ylim_marg_x), max(xlim_marg_y))
+    # sharey(axes_marg_x, ylim=(0, height))
+    # sharex(axes_marg_y, xlim=(0, height))
+    # mngs.io.save(fig, spath_fig, from_cwd=False, dry_run=False)
 
 
 if __name__ == "__main__":
@@ -405,6 +469,8 @@ if __name__ == "__main__":
         plt,
         verbose=False,
         agg=True,
+        # font_size_axis_label=6,
+        # font_size_title=6,
         alpha=0.3,
         fig_scale=2,
     )
