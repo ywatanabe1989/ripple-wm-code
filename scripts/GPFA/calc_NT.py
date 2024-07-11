@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-28 16:28:16 (ywatanabe)"
+# Time-stamp: "2024-07-11 14:16:03 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
@@ -23,6 +23,7 @@ import numpy as np
 import quantities as pq
 from elephant.gpfa import GPFA
 from natsort import natsorted
+import logging
 
 """
 Config
@@ -59,22 +60,13 @@ def spiketimes_to_spiketrains(
     return spike_trains_all_trials
 
 
+from utils import parse_lpath
+
 # def parse_lpath(lpath):
-#     subject = re.findall("Sub_[\w]{2}", lpath)[0][-2:]
-#     session = re.findall("Session_[\w]{2}", lpath)[0][-2:]
-#     roi = (
-#         re.findall("spike_times/[\w]{2,3}.pkl", lpath)[0]
-#         .split("spike_times/")[-1]
-#         .split(".pkl")[0]
-#     )
+#     subject = re.findall(r"Sub_(\w{2})", lpath)[0]
+#     session = re.findall(r"Session_(\w{2})", lpath)[0]
+#     roi = re.findall(r"spike_times/(\w{2,3})\.pkl", lpath)[0]
 #     return subject, session, roi
-
-
-def parse_lpath(lpath):
-    subject = re.findall(r"Sub_(\w{2})", lpath)[0]
-    session = re.findall(r"Session_(\w{2})", lpath)[0]
-    roi = re.findall(r"spike_times/(\w{2,3})\.pkl", lpath)[0]
-    return subject, session, roi
 
 
 def switch_regarding_match(spike_trains, subject, session, match):
@@ -100,50 +92,41 @@ def determine_spath(lpath_spike_times, match, without_retrieval_phase):
 
 def main(match="all", without_retrieval_phase=False):
     # Parameters
-    BIN_SIZE = CONFIG["GPFA_BIN_SIZE_MS"] * pq.ms
+    BIN_SIZE = CONFIG.GPFA.BIN_SIZE_MS * pq.ms
 
     # Loads spike timings
-    LPATHs = mngs.gen.natglob("./data/Sub_*/Session_*/spike_times/*.pkl")
+    # LPATHS_SPIKE_TIMES = mngs.gen.natglob("./data/Sub_*/Session_*/spike_times/*.pkl")
+    LPATHS_SPIKE_TIMES = mngs.gen.natglob(CONFIG.PATH.SPIKE_TIMES)
 
-    for lpath in LPATHs:
-
+    for lpath in LPATHS_SPIKE_TIMES:
         sub, session, roi = parse_lpath(lpath)
 
         # Spike trains of all trials;
         # some of spike trains data are unavailable in the original datset.
-        lpath_spike_times = eval(CONFIG["PATH_SPIKE_TIMES"])
-        spike_times_all_trials = mngs.io.load(lpath_spike_times)
-        # lpath_spike_times = (
-        #     f"./data/Sub_{subject}/Session_{session}/spike_times/{roi}.pkl"
-        # )
-        # spike_times_all_trials = mngs.io.load(lpath_spike_times)
-
+        spike_times_all_trials = mngs.io.load(lpath)
         spike_trains = spiketimes_to_spiketrains(
             spike_times_all_trials,
             without_retrieval_phase=without_retrieval_phase,
         )
-
         spike_trains = switch_regarding_match(
             spike_trains, sub, session, match
         )
 
         # GPFA calculation
-        gpfa = GPFA(bin_size=BIN_SIZE, x_dim=3)
+        gpfa = GPFA(bin_size=BIN_SIZE, x_dim=8)
         try:
             NTs = np.stack(gpfa.fit_transform(spike_trains), axis=0)
 
             # Saving
-            spath_NTs = determine_spath(
-                lpath_spike_times, match, without_retrieval_phase
-            )
+            spath_NTs = determine_spath(lpath, match, without_retrieval_phase)
             mngs.io.save(NTs, spath_NTs, from_cwd=True)
 
         except Exception as e:
-            print(
+            logging.warn(
                 f"\nError raised during GPFA calculation. Spike_trains might be unavailable. "
-                f"Skipping {spath_NTs}.:\n"
+                f"Skipping {spath_NTs}.:\n",
+                e,
             )
-            print(e)
 
 
 if __name__ == "__main__":
