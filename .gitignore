@@ -567,3 +567,4 @@ flycheck_*.el
 # network security
 /network-security.data
 scripts/externals/mngs
+scripts/NT/visualization/umap_8_factors**/*.jpg
