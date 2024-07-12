@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-12 00:48:07 (ywatanabe)"
+# Time-stamp: "2024-07-12 00:52:52 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/utils/_load_NTdf.py
 
 
@@ -52,7 +52,8 @@ Warnings
 """
 Config
 """
-# CONFIG = mngs.gen.load_configs()
+CONFIG = mngs.gen.load_configs()
+CC = mngs.plt.PARAMS["RGBA_NORM"]
 
 
 """

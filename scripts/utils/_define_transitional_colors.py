@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-07 15:30:50 (ywatanabe)"
+# Time-stamp: "2024-07-12 01:02:35 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/utils/_define_transition_colors.py
 
 import numpy as np
@@ -9,8 +9,6 @@ import mngs
 """
 Config
 """
-CONFIG = mngs.gen.load_configs()
-CC = mngs.plt.PARAMS["RGBA_NORM"]
 
 
 """
@@ -19,6 +17,9 @@ Functions & Classes
 
 
 def define_transitional_colors():
+    CONFIG = mngs.gen.load_configs()
+    CC = mngs.plt.PARAMS["RGBA_NORM"]
+
     phases = list(CONFIG.PHASES.keys())
     colors = []
     for i_phase in range(len(phases) - 1):
