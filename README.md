@@ -8,7 +8,8 @@
 ./scripts/demographic/all.sh
 ./scripts/ripple/all.sh
 ./scripts/NT/all.sh
-./scripts/NT/kde.py
+./scripts/NT/visualization/kde.py
+./scripts/NT/visualization/umap_8_factors.py
 ```
 
 #### Figures
@@ -16,10 +17,6 @@
 ``` bash
 ./scripts/figures/01.py
 ./scripts/figures/02.py
- 
- 
- 
- 
 ```
 
 
