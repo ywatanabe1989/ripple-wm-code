@@ -10,6 +10,7 @@
 ./scripts/NT/all.sh
 ./scripts/NT/visualization/kde.py
 ./scripts/NT/visualization/umap_8_factors.py
+./scripts/NT/clf/SVC.py
 ```
 
 #### Figures
