@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-20 19:31:41 (ywatanabe)"
+# Time-stamp: "2024-08-19 08:28:18 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -16,7 +16,6 @@ import os
 import re
 import sys
 import warnings
-from functools import partial
 from glob import glob
 from pprint import pprint
 
@@ -31,6 +30,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import xarray as xr
 from icecream import ic
+from joblib import Parallel, delayed
 from natsort import natsorted
 from scripts import utils
 from sklearn.dummy import DummyClassifier
@@ -58,7 +58,7 @@ Config
 Functions & Classes
 """
 
-N_REPEAT = 100
+N_REPEAT = 10
 N_CV = 10
 
 
@@ -89,10 +89,9 @@ def NT_to_X_T_C(NT, trials_info):
 
 
 def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
-    conditions_uq = list(np.unique(C))
-    conditional_metrics = mngs.gen.listed_dict()
 
-    for train_index, test_index in rskf.split(X, y=T):
+    def process_fold(train_index, test_index):
+        print("process fold")
         # Runs a fold
         X_train, X_test = X[train_index], X[test_index]
         T_train, T_test = T[train_index], T[test_index]
@@ -129,11 +128,26 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
                 {
                     "bACC_fold": bACC_condi,
                     "conf_mat_fold": conf_mat_condi,
-                    "n_samples": indi.sum(),
                 }
             )
+            return conditional_metrics
 
-    return conditional_metrics
+    conditions_uq = list(np.unique(C))
+    conditional_metrics = mngs.gen.listed_dict()
+
+    # for train_index, test_index in rskf.split(X, y=T):
+    results = Parallel(n_jobs=12)(
+        delayed(process_fold)(train_index, test_index)
+        for train_index, test_index in rskf.split(X, y=T)
+    )
+
+    # Combine results
+    combined_metrics = mngs.gen.listed_dict()
+    for result in results:
+        for condition, metrics in result.items():
+            combined_metrics[condition].extend(metrics)
+
+    return combined_metrics
 
 
 def to_metrics_df(conditional_metrics, dummy):
@@ -141,13 +155,11 @@ def to_metrics_df(conditional_metrics, dummy):
     out = {}
     for cc, mm in conditional_metrics.items():
         df = pd.concat([pd.DataFrame(pd.Series(_mm)).T for _mm in mm])
-        n_samples = df["n_samples"].sum()
         bACCs = df["bACC_fold"]
         bACC_mean = bACCs.mean()
         bACC_std = bACCs.std()
         conf_mat = df["conf_mat_fold"].sum().astype(int)
         out[cc] = {
-            "n_samples": n_samples,
             "n_folds": len(bACCs),
             "bACCs": [bACCs],  # for statistical tests
             "bACC_mean": bACC_mean,
@@ -223,58 +235,20 @@ def reorganize_conditional_metrics(df):
     return pd.DataFrame(new_df)
 
 
-def format_metrics_all(metrics_all):
-    metrics_all = metrics_all.reset_index().rename(
-        columns={"index": "condition"}
-    )
-    metrics_all = metrics_all.set_index(
-        ["sub", "session", "roi", "condition", "classifier"]
-    )
-    metrics_all = metrics_all.astype(float)
-    metrics_all = metrics_all.reset_index()
-    metrics_all = metrics_all.groupby(["classifier", "condition"]).agg(
-        {
-            "bACC_mean": ["mean", "std"],
-            "n_samples": "sum",
-            "n_folds": "sum",
-            "w_statistic": ["mean"],
-            "p_value": ["mean"],
-            "dof": ["mean"],
-            "effsize": ["mean"],
-        }
-    )
-    return metrics_all
+def process_ca1(ca1):
+    NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
+    trials_info = mngs.io.load(mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1))
+    metrics, conf_mats = main_NT(NT, trials_info)
+    for k, v in ca1.items():
+        metrics[k] = v
+        conf_mats[k] = v
+    return metrics, conf_mats
 
 
-def format_conf_mats_all(conf_mats_all):
-    conf_mats_all = conf_mats_all.reset_index().rename(
-        columns={"index": "condition"}
-    )
-
-    conf_mats_all = conf_mats_all.set_index(
-        ["sub", "session", "roi", "condition", "classifier"]
-    ).reset_index()
-
-    def _my_calc(x, func, index, columns):
-        return pd.DataFrame(
-            func(np.stack(x.tolist()), axis=0), index=index, columns=columns
-        )
-
-    index = columns = list(conf_mats_all.iloc[0]["conf_mat"].index)
-    my_sum = partial(_my_calc, func=np.nansum, index=index, columns=columns)
-    my_mean = partial(_my_calc, func=np.nanmean, index=index, columns=columns)
-    my_std = partial(_my_calc, func=np.nanstd, index=index, columns=columns)
-
-    conf_mats_all = conf_mats_all.groupby(["classifier", "condition"]).agg(
-        {"conf_mat": [("sum", my_sum), ("mean", my_mean), ("std", my_std)]}
-    )
-
-    for col in ["sum", "mean", "std"]:
-        conf_mats_all[("conf_mat", col)] = conf_mats_all[
-            ("conf_mat", col)
-        ].apply(lambda x: pd.DataFrame(x, index=index, columns=columns))
-
-    return conf_mats_all
+# def main():
+#     results = Parallel(n_jobs=-1)(delayed(process_ca1)(ca1) for ca1 in CONFIG.ROI.CA1)
+#     metrics_all = pd.concat([r[0] for r in results])
+#     conf_mats_all = pd.concat([r[1] for r in results])
 
 
 def main():
@@ -283,15 +257,16 @@ def main():
 
     # Calculation
     for ca1 in CONFIG.ROI.CA1:
-        NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
-        trials_info = mngs.io.load(
-            mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
-        )
-        metrics, conf_mats = main_NT(NT, trials_info)
+        metrics, conf_mats = process_ca1(ca1)
+        # NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
+        # trials_info = mngs.io.load(
+        #     mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
+        # )
+        # metrics, conf_mats = main_NT(NT, trials_info)
 
-        for k, v in ca1.items():
-            metrics[k] = v
-            conf_mats[k] = v
+        # for k, v in ca1.items():
+        #     metrics[k] = v
+        #     conf_mats[k] = v
 
         # Buffering
         metrics_all.append(metrics)
@@ -299,38 +274,47 @@ def main():
 
     # Summary
     metrics_all = pd.concat(metrics_all)
-    metrics_all = format_metrics_all(metrics_all)
-
     conf_mats_all = pd.concat(conf_mats_all)
-    conf_mats_all = format_conf_mats_all(conf_mats_all)
-
-    # Cache
-    metrics_all, conf_mats_all = mngs.io.cache(
-        "id_31024987",
-        "metrics_all",
-        "conf_mats_all",
-    )
 
     # Saving
+    df_svc = metrics_all[metrics_all.classifier == "SVC"].loc["all"]
+    df_dummy = metrics_all[metrics_all.classifier == "dummy"].loc["all"]
+    conf_mats_svc = conf_mats_all[conf_mats_all.classifier == "SVC"].loc["all"]
+    conf_mats_dummy = conf_mats_all[conf_mats_all.classifier == "dummy"].loc[
+        "all"
+    ]
 
-    # Metrics
-    mngs.io.save(metrics_all, "./data/NT/SVC/metrics_all.csv", from_cwd=True)
+    __import__("ipdb").set_trace()
 
-    # Confusioon Matrices
-    for ii, row in conf_mats_all.iterrows():
-        string_base = "_".join(ii)
-        conf_mats = conf_mats_all.loc[ii]
-        for iic in conf_mats.index:
-            string = string_base + "-" + "_".join(iic)
-            cm = conf_mats.loc[iic]
-            fig, cm = mngs.ml.plt.conf_mat(plt, cm=cm, title=string)
-            mngs.io.save(
-                fig, f"./data/NT/SVC/conf_mat/figs/{string}.jpg", from_cwd=True
-            )
-            mngs.io.save(
-                cm, f"./data/NT/SVC/conf_mat/csv/{string}.csv", from_cwd=True
-            )
-            plt.close()
+    # mngs.io.save(stats, "./data/NT/clf/SVC_condition_stats.csv", from_cwd=True)
+
+    # folds_scores_global = np.vstack(df.folds_scores_raw)
+    # dummy_scores_global = np.vstack(df.dummy_scores_raw)
+    # folds_scores_global_str = f"{folds_scores_global.mean().round(3)} +/- {folds_scores_global.std().round(3)}"
+    # dummy_scores_global_str = f"{dummy_scores_global.mean().round(3)} +/- {dummy_scores_global.std().round(3)}"
+
+    # df = pd.concat(
+    #     [
+    #         df,
+    #         pd.DataFrame(
+    #             {
+    #                 "folds_scores": [folds_scores_global_str],
+    #                 "dummy_scores": [dummy_scores_global_str],
+    #             }
+    #         ),
+    #     ],
+    #     ignore_index=True,
+    # )
+
+    # df_clf = df.drop(["folds_scores_raw", "dummy_scores_raw"], axis=1)
+    # # df_confmat = pd.DataFrame(global_conf_matrix).astype(int)
+
+    # # fig, _ = mngs.ml.plt.conf_mat(plt, cm=df_confmat)
+
+    # # Saving
+    # mngs.io.save(df_clf, "./data/NT/clf/SVC_clf.csv", from_cwd=True)
+    # # mngs.io.save(df_confmat, "./data/NT/clf/SVC_confmat.csv", from_cwd=True)
+    # # mngs.io.save(fig, "./data/NT/clf/SVC_confmat.jpg", from_cwd=True)
 
 
 if __name__ == "__main__":
