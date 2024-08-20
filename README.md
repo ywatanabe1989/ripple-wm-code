@@ -2,6 +2,13 @@
 
 #### [Installation and download](./docs/installation.md)
 
+#### Data
+
+``` bash
+./data
+```
+
+
 #### Scripts
 ```bash
 ./scripts/load/all.sh
