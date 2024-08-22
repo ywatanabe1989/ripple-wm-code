@@ -17,8 +17,8 @@
 ./scripts/NT/all.sh
 ./scripts/NT/visualization/kde.py
 ./scripts/NT/visualization/umap_8_factors.py
-./scripts/NT/clf/SVC.py
-./scripts/NT/clf/SVC_parallel.py
+./scripts/NT/clf/linearSVC.py
+
 ```
 
 #### Figures

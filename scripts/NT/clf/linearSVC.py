@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-20 19:52:01 (ywatanabe)"
+# Time-stamp: "2024-08-22 10:58:38 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -89,6 +89,9 @@ def NT_to_X_T_C(NT, trials_info):
 
 
 def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
+    clf_name = clf.__class__.__name__
+    is_dummy = clf_name == "DummyClassifier"
+
     conditions_uq = list(np.unique(C))
     conditional_metrics = mngs.gen.listed_dict()
 
@@ -125,9 +128,22 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
                 ],
             )
             plt.close()
+
+            if (not is_dummy) and (condition == "all"):
+                weights = clf.coef_
+                bias = clf.intercept_
+            else:
+                weights = np.full(
+                    (len(np.unique(T_train)), X_train.shape[-1]), np.nan
+                )
+                bias = np.full(X_train.shape[-1], np.nan)
+
             conditional_metrics[condition].append(
                 {
+                    "classifier": clf_name,
                     "bACC_fold": bACC_condi,
+                    "weights_fold": weights,
+                    "bias_fold": bias,
                     "conf_mat_fold": conf_mat_condi,
                     "n_samples": indi.sum(),
                 }
@@ -136,26 +152,30 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
     return conditional_metrics
 
 
-def to_metrics_df(conditional_metrics, dummy):
-    # Reorganize metrics
-    out = {}
+def aggregate_conditional_metrics(conditional_metrics, dummy):
+    agg = {}
     for cc, mm in conditional_metrics.items():
         df = pd.concat([pd.DataFrame(pd.Series(_mm)).T for _mm in mm])
-        n_samples = df["n_samples"].sum()
-        bACCs = df["bACC_fold"]
-        bACC_mean = bACCs.mean()
-        bACC_std = bACCs.std()
-        conf_mat = df["conf_mat_fold"].sum().astype(int)
-        out[cc] = {
-            "n_samples": n_samples,
-            "n_folds": len(bACCs),
-            "bACCs": [bACCs],  # for statistical tests
-            "bACC_mean": bACC_mean,
-            "bACC_std": bACC_std,
-            "conf_mat": conf_mat,
-        }
-    df = pd.DataFrame(out).T
-    df["classifier"] = "dummy" if dummy else "SVC"
+        assert len(np.unique(df["classifier"])) == 1
+
+        with mngs.gen.suppress_output():
+            agg[cc] = {
+                "n_samples": df["n_samples"].sum(),
+                "n_folds": len(df["bACC_fold"]),
+                "weights_mean": np.nanmean(
+                    np.stack(df["weights_fold"]), axis=0
+                ),
+                "weights_std": np.nanstd(np.stack(df["weights_fold"]), axis=0),
+                "bias_mean": np.nanmean(np.stack(df["bias_fold"]), axis=0),
+                "bias_std": np.nanstd(np.stack(df["bias_fold"]), axis=0),
+                "bACCs": [df["bACC_fold"]],
+                "bACC_mean": df["bACC_fold"].mean(),
+                "bACC_std": df["bACC_fold"].std(),
+                "conf_mat": df["conf_mat_fold"].sum().astype(int),
+                "classifier": df["classifier"].iloc[0],
+            }
+    df = pd.DataFrame(agg).T
+
     return df
 
 
@@ -175,7 +195,7 @@ def calc_folds(NT, trials_info, dummy):
     conditional_metrics = train_and_eval_SVC(clf, rskf, X, T, C, trials_info)
 
     # Organize data
-    metrics_df = to_metrics_df(conditional_metrics, dummy)
+    metrics_df = aggregate_conditional_metrics(conditional_metrics, dummy)
 
     return metrics_df
 
@@ -197,9 +217,10 @@ def main_NT(NT, trials_info):
     for indi in metrics.index.unique():
         df = metrics.loc[indi]
 
-        bm_stats = mngs.stats.brunner_munzel_test(
-            df["bACCs"].iloc[0][0], df["bACCs"].iloc[1][0]
-        )
+        with mngs.gen.suppress_output():
+            bm_stats = mngs.stats.brunner_munzel_test(
+                df["bACCs"].iloc[0][0], df["bACCs"].iloc[1][0]
+            )
 
         for k, v in bm_stats.items():
             metrics.loc[indi, k] = v
@@ -230,11 +251,15 @@ def format_metrics_all(metrics_all):
     metrics_all = metrics_all.set_index(
         ["sub", "session", "roi", "condition", "classifier"]
     )
-    metrics_all = metrics_all.astype(float)
     metrics_all = metrics_all.reset_index()
     metrics_all = metrics_all.groupby(["classifier", "condition"]).agg(
         {
             "bACC_mean": ["mean", "std"],
+            "bACC_std": ["mean", "std"],
+            "weights_mean": ["mean"],
+            "weights_std": ["mean"],
+            "bias_mean": ["mean"],
+            "bias_std": ["mean"],
             "n_samples": "sum",
             "n_folds": "sum",
             "w_statistic": ["mean"],
@@ -266,10 +291,10 @@ def format_conf_mats_all(conf_mats_all):
     my_std = partial(_my_calc, func=np.nanstd, index=index, columns=columns)
 
     conf_mats_all = conf_mats_all.groupby(["classifier", "condition"]).agg(
-        {"conf_mat": [("sum", my_sum), ("mean", my_mean), ("std", my_std)]}
+        {"conf_mat": [("sum", my_sum)]}
     )
 
-    for col in ["sum", "mean", "std"]:
+    for col in ["sum"]:
         conf_mats_all[("conf_mat", col)] = conf_mats_all[
             ("conf_mat", col)
         ].apply(lambda x: pd.DataFrame(x, index=index, columns=columns))
@@ -298,11 +323,8 @@ def main():
         conf_mats_all.append(conf_mats)
 
     # Summary
-    metrics_all = pd.concat(metrics_all)
-    metrics_all = format_metrics_all(metrics_all)
-
-    conf_mats_all = pd.concat(conf_mats_all)
-    conf_mats_all = format_conf_mats_all(conf_mats_all)
+    metrics_all = format_metrics_all(pd.concat(metrics_all))
+    conf_mats_all = format_conf_mats_all(pd.concat(conf_mats_all))
 
     # Cache
     metrics_all, conf_mats_all = mngs.io.cache(
@@ -316,6 +338,21 @@ def main():
     # Metrics
     mngs.io.save(
         metrics_all, "./data/NT/LinearSVC/metrics_all.csv", from_cwd=True
+    )
+
+    # weights and biases
+    cols_wb = [
+        ("weights_mean", "mean"),
+        ("weights_std", "mean"),
+        ("bias_mean", "mean"),
+        ("bias_std", "mean"),
+    ]
+    weights_and_biases = metrics_all[cols_wb].loc[("LinearSVC", "all")]
+
+    mngs.io.save(
+        weights_and_biases,
+        "./data/NT/LinearSVC/weights_and_biases.pkl",
+        from_cwd=True,
     )
 
     # Confusioon Matrices
@@ -344,6 +381,6 @@ if __name__ == "__main__":
         sys, plt, verbose=False, agg=True
     )
     main()
-    mngs.gen.close(CONFIG, verbose=False, notify=False)
+    mngs.gen.close(CONFIG, verbose=False, notify=True)
 
 # EOF
