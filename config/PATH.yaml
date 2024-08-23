@@ -30,5 +30,14 @@ PATH:
   NT_Z:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session.npy"
 
+  NT_GS:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs.csv"
+
+  NT_DIST_FROM_G:
+    "./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/from_g.csv"
+
+  NT_BARCODE:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/TDA/barcode.csv"
+
   SCATTER:
     f"./data/CA1/NT/linear/orig/{sample_type}/sub-{sub}_session-{session}_roi-{roi}.csv"

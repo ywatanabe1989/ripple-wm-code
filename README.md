@@ -18,6 +18,9 @@
 ./scripts/NT/visualization/kde.py
 ./scripts/NT/visualization/umap_8_factors.py
 ./scripts/NT/clf/linearSVC.py
+./scripts/NT/geometrics_medians.py
+./scripts/NT/TDA.py
+
 
 ```
 
