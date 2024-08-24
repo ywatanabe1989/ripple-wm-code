@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-23 21:03:33 (ywatanabe)"
+# Time-stamp: "2024-08-23 21:04:42 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA.py
 
 
