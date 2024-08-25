@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-25 08:59:12 (ywatanabe)"
+# Time-stamp: "2024-08-25 10:45:31 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA.py
 
 
@@ -119,14 +119,7 @@ def calc_distances(NT, GS, TI):
     return df
 
 
-def plot_n_samples(NT, GS, TI, ca1, spath_base):
-    mngs.plt.configure_mpl(plt, verbose=False)
-
-    # Distance
-    dist_df = calc_distances(NT, GS, TI)
-
-    # Radii to count
-    radii = np.logspace(np.log10(0.1), np.log10(10), 100)
+def count(dist_df, radii):
 
     # Count
     dist_df["n_bin"] = 1
@@ -151,47 +144,77 @@ def plot_n_samples(NT, GS, TI, ca1, spath_base):
         r_df["radius"] = rr
         df.append(r_df)
     df = pd.concat(df, ignore_index=True)
+    return df
 
-    # Counting
+
+def extract_conditions(df):
     conditions = {
         k: df[k].unique().tolist() for k in ["phase_g", "phase_nt", "match"]
     }
     conditions = list(mngs.gen.yield_grids(conditions))
+    conditions = pd.concat(
+        [pd.DataFrame(pd.Series(cc)).T for cc in conditions]
+    )
 
-    fig, ax = mngs.plt.subplots(figsize=(12, 8))
+    sorted_conditions = mngs.pd.sort(
+        conditions,
+        orders={
+            "match": [1, 2],
+            "phase_g": ["Encoding", "Retrieval"],
+            "phase_g": ["Encoding", "Retrieval"],
+        },
+    )
 
+    return sorted_conditions.apply(dict, axis=1).tolist()
+
+
+def prepare_heatmap_data(df, conditions):
     heatmap_data = []
-    condition_labels = []
+
     for cc in conditions:
         df_cc = mngs.pd.slice(df, cc)
         df_cc = df_cc.sort_values(["radius"])
         yy = df_cc.n_bin
         yy = yy / yy.max() * 100
         heatmap_data.append(yy)
-        condition_labels.append(str(cc))
 
     heatmap_data = np.vstack(heatmap_data)
+    return heatmap_data
 
-    sorted_indices = natsorted(
-        range(len(condition_labels)), key=lambda i: condition_labels[i]
-    )
 
-    heatmap_data = heatmap_data[sorted_indices]
-    condition_labels = np.array(condition_labels)[sorted_indices].tolist()
+def plot_n_samples(NT, GS, TI, ca1, spath_base):
+    mngs.plt.configure_mpl(plt, verbose=False)
 
+    # Distance
+    dist_df = calc_distances(NT, GS, TI)
+
+    # Params
+    radii = np.logspace(np.log10(0.1), np.log10(dist_df.dist.max()), 100)
+
+    # Count
+    df = count(dist_df, radii)
+
+    # Conditions
+    conditions = extract_conditions(df)
+
+    # Heatmap data
+    heatmap_data = prepare_heatmap_data(df, conditions)
+
+    # Plotting
+    fig, ax = mngs.plt.subplots(figsize=(12, 8))
     ax.imshow2d(heatmap_data.T)
-
-    condition_labels = [
-        str(cl).replace(", ", ",\n") for cl in condition_labels
-    ]
     ax.set_ticks(
-        yvals=np.arange(len(condition_labels)),
-        yticks=np.array(condition_labels),
+        xvals=np.array(radii).round(3),
+        yvals=np.arange(len(conditions)),
+        yticks=conditions,
     )
     ax.set_xyt("Radius", "Conditions", str(ca1))
 
     # Saving
     mngs.io.save(fig, "./" + mngs.gen.title2path(ca1) + ".jpg", from_cwd=True)
+    mngs.io.save(
+        ax.to_sigma(), "./" + mngs.gen.title2path(ca1) + ".csv", from_cwd=True
+    )
 
     return fig
 
