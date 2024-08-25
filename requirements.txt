@@ -8,3 +8,4 @@ elephant
 imblearn
 scikit-posthocs
 ripser
+joypy
