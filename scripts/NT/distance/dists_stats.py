@@ -1,6 +1,6 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-25 21:08:56 (ywatanabe)"
+# Time-stamp: "2024-08-26 11:46:57 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -12,33 +12,31 @@ This script does XYZ.
 """
 Imports
 """
+import importlib
+import logging
 import os
 import re
 import sys
+import warnings
+from glob import glob
+from pprint import pprint
 
 import matplotlib
 import matplotlib.pyplot as plt
-import seaborn as sns
-import importlib
-
 import mngs
-
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import xarray as xr
 from icecream import ic
 from natsort import natsorted
-from glob import glob
-from pprint import pprint
-import warnings
-import logging
-from tqdm import tqdm
-import xarray as xr
 from scipy.stats import rankdata
-import joypy
+from tqdm import tqdm
 
+# import joypy
 mngs.pd.ignore_SettingWithCopyWarning()
 # sys.path = ["."] + sys.path
 # from scripts import utils, load
@@ -60,13 +58,14 @@ Functions & Classes
 """
 
 
+from itertools import combinations
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.stats as stats
-from statsmodels.stats.multicomp import pairwise_tukeyhsd
-from itertools import combinations
-from scipy import stats
-import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 
 def under_sample(df, cols_NT):
@@ -90,7 +89,7 @@ def under_sample(df, cols_NT):
     return df
 
 
-def to_rank(df, cols_NT):
+def NT_to_rank(df, cols_NT):
     df_info = df[list(set(df.columns) - set(cols_NT))].copy()  # (9860, 4)
     df_NT = df[cols_NT].copy()  # (9860, 8)
     df_rank = np.nan * df_NT.copy()  # (9860, 8)
@@ -113,8 +112,8 @@ def to_rank(df, cols_NT):
 
     val_rank_max = np.array(df_NT)[np.where(df_rank == np.nanmax(df_rank))]
     val_rank_min = np.array(df_NT)[np.where(df_rank == np.nanmin(df_rank))]
-    print(val_rank_max)
-    print(val_rank_min)
+    # print(val_rank_max)
+    # print(val_rank_min)
 
     return pd.concat([df_info, df_rank], axis=1)
 
@@ -163,35 +162,74 @@ def perform_pairwise_statistical_test(df, cols_NT):
 #     return fig
 
 
+# # Working
+# def plot_violin(df, cols_NT):
+#     fig, ax = mngs.plt.subplots(figsize=(10, 6))
+#     df_plot = df[cols_NT].melt()
+#     sns.violinplot(
+#         data=df_plot[~df_plot.value.isna()],
+#         x="variable",
+#         y="value",
+#         ax=ax,
+#         inner="quartile",
+#     )
+#     ax.set_title("Distribution of Ranked Data")
+#     ax.set_xlabel("Variables")
+#     ax.set_ylabel("Rank")
+#     return fig
+
+
 def plot_violin(df, cols_NT):
-    fig, ax = mngs.plt.subplots(figsize=(10, 6))
+    fig, ax = mngs.plt.subplots()
     df_plot = df[cols_NT].melt()
-    sns.violinplot(
+
+    ax.sns_violinplot(
         data=df_plot[~df_plot.value.isna()],
         x="variable",
         y="value",
-        ax=ax,
         inner="quartile",
     )
-    ax.set_title("Distribution of Ranked Data")
-    ax.set_xlabel("Variables")
-    ax.set_ylabel("Rank")
     return fig
 
 
 def plot_joy(df, cols_NT):
     df_plot = df[cols_NT]
-    fig, axes = joypy.joyplot(
-        data=df_plot,
-        colormap=plt.cm.viridis,
-        title="Distribution of Ranked Data",
-        labels=cols_NT,
-        overlap=0.5,
-        orientation="vertical",
-    )
-    plt.xlabel("Variables")
-    plt.ylabel("Rank")
+    fig, ax = mngs.plt.subplots()
+    ax.joyplot(df[cols_NT])
+    # fig, axes = joypy.joyplot(
+    #     data=df_plot,
+    #     colormap=plt.cm.viridis,
+    #     title="Distribution of Ranked Data",
+    #     labels=cols_NT,
+    #     overlap=0.5,
+    #     orientation="vertical",
+    # )
+    # plt.xlabel("Variables")
+    # plt.ylabel("Rank")
     return fig
+
+
+# # working
+# def plot_kde(df, cols_NT):
+#     fig, ax = plt.subplots(figsize=(10, 6))
+#     for col in cols_NT:
+
+#         color = define_color(col)
+#         linestyle = "-" if "1.0" in col else "--"
+
+#         sns.kdeplot(
+#             data=df[col],
+#             ax=ax,
+#             vertical=False,
+#             label=col,
+#             color=CC[color],
+#             linestyle=linestyle,
+#         )
+#     ax.set_title("Distribution of Ranked Data")
+#     ax.set_ylabel("KDE")
+#     ax.set_xlabel("Ranked distance")
+#     ax.legend()
+#     return fig
 
 
 def define_color(col):
@@ -205,33 +243,83 @@ def define_color(col):
         return "red"
 
 
-def plot_density(df, cols_NT):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for col in cols_NT:
+def plot_kde(df, cols_NT):
+    # Data Preparation
+    df_melt = df[cols_NT].melt()
+    df_melt = df_melt.rename(
+        columns={"variable": "Group", "value": "Ranked Distance"}
+    )
+    df_melt = df_melt.dropna()
 
-        color = define_color(col)
-        linestyle = "-" if "1.0" in col else "--"
+    df_melt["Group"] = df_melt["Group"].replace(
+        {"1.0-": "Match IN: ", "2.0-": "Mismatch OUT: "},  # , "-NT": "--NT"
+        regex=True,
+    )
 
-        sns.kdeplot(
-            data=df[col],
-            ax=ax,
-            vertical=False,
-            label=col,
-            color=CC[color],
-            linestyle=linestyle,
-        )
-    ax.set_title("Distribution of Ranked Data")
-    ax.set_ylabel("KDE")
-    ax.set_xlabel("Ranked distance")
-    ax.legend()
+    # hue_colors = {
+    #     "Match IN: $g_E-NT_E$": CC["blue"],
+    #     "Match IN: $g_E-NT_R$": CC["light_blue"],
+    #     "Match IN: $g_R-NT_E$": CC["pink"],
+    #     "Match IN: $g_R-NT_R$": CC["red"],
+    #     "Mismatch OUT: $g_E-NT_E$": CC["blue"],
+    #     "Mismatch OUT: $g_E-NT_R$": CC["light_blue"],
+    #     "Mismatch OUT: $g_R-NT_E$": CC["pink"],
+    #     "Mismatch OUT: $g_R-NT_R$": CC["red"],
+    # }
+
+    # how can I replace CC["*"], to "*" on emacs?
+
+    hue_colors = {
+        "Match IN: $g_E-NT_E$": CC["blue"],
+        "Match IN: $g_E-NT_R$": CC["light_blue"],
+        "Match IN: $g_R-NT_E$": CC["pink"],
+        "Match IN: $g_R-NT_R$": CC["red"],
+        "Mismatch OUT: $g_E-NT_E$": CC["blue"],
+        "Mismatch OUT: $g_E-NT_R$": CC["light_blue"],
+        "Mismatch OUT: $g_R-NT_E$": CC["pink"],
+        "Mismatch OUT: $g_R-NT_R$": CC["red"],
+    }
+    hue_order = list(hue_colors.keys())
+    hue_line_styles = {
+        "Match IN: $g_E-NT_E$": "-",
+        "Match IN: $g_E-NT_R$": "-",
+        "Match IN: $g_R-NT_E$": "-",
+        "Match IN: $g_R-NT_R$": "-",
+        "Mismatch OUT: $g_E-NT_E$": "--",
+        "Mismatch OUT: $g_E-NT_R$": "--",
+        "Mismatch OUT: $g_R-NT_E$": "--",
+        "Mismatch OUT: $g_R-NT_R$": "--",
+    }
+
+    # Main
+    fig, ax = mngs.plt.subplots()
+    ax.sns_kdeplot(
+        data=df_melt,
+        x="Ranked Distance",
+        hue="Group",
+        hue_order=hue_order,
+        hue_colors=hue_colors,
+    )
+    # fig, ax = plt.subplots()
+    # sns.kdeplot(
+    #     data=df_melt,
+    #     x="Ranked Distance",
+    #     hue="Group",
+    #     hue_order=hue_order,
+    #     palette=hue_colors,
+    #     ax=ax,
+    # )
+
+    # Apply line styles
+    for line, group in zip(ax.lines, hue_order):
+        line.set_linestyle(hue_line_styles[group])
+
     return fig
 
 
 def main():
     # Loading
-    LPATHS = mngs.io.glob(
-        "/mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_in_spheres_bp/*.csv"
-    )
+    LPATHS = mngs.io.glob("./scripts/NT/distance/plot_dists/*.csv")
     df = pd.concat([mngs.io.load(lpath) for lpath in LPATHS]).reset_index()
     df = df.drop(columns=["index"])
 
@@ -241,51 +329,18 @@ def main():
     df = under_sample(df, cols_NT)
 
     # Smaller rank represents smaller distance
-    df = to_rank(df, cols_NT)
+    df = NT_to_rank(df, cols_NT)
 
     # Plotting
     # fig = plot_box(df, cols_NT)
-    # fig = plot_ranked_data(df, cols_NT)
     # fig = plot_joy(df, cols_NT)
-    fig = plot_density(df, cols_NT)
+    fig = plot_kde(df, cols_NT)
     plt.show()
     __import__("ipdb").set_trace()
 
     perform_pairwise_statistical_test(df, cols_NT)
 
     __import__("ipdb").set_trace()
-
-
-# def get_task(col):
-#     return '1.0 Match IN' if col.startswith('1.0') else '2.0 Mismatch OUT'
-
-# def get_measure(col):
-#     return 'NT_E' if 'NT_E' in col else 'NT_R'
-
-# results['task1'] = results['col1'].apply(get_task)
-# results['task2'] = results['col2'].apply(get_task)
-# results['measure1'] = results['col1'].apply(get_measure)
-# results['measure2'] = results['col2'].apply(get_measure)
-
-# # Organize results
-# organized_results = []
-# for task_combo in ['Within Match IN', 'Within Mismatch OUT', 'Between Tasks']:
-#     for measure_combo in ['NT_E vs NT_E', 'NT_R vs NT_R', 'NT_E vs NT_R']:
-#         subset = results[
-#             ((results['task1'] == results['task2']) if 'Within' in task_combo else (results['task1'] != results['task2'])) &
-#             ((results['measure1'] == results['measure2'] == measure_combo[:4]) if 'vs' not in measure_combo else
-#              (results['measure1'] != results['measure2']))
-#         ].sort_values('p_value_corrected')
-#         organized_results.append(subset)
-
-# final_results = pd.concat(organized_results)
-# print(final_results[['col1', 'col2', 'statistic', 'p_value_corrected']])
-
-# fig, ax = mngs.plt.subplots()
-# ax.sns_boxplot(
-#     data=df,
-#     x=
-# )
 
 
 # def perform_kruskal_wallis(df, cols_NT):
