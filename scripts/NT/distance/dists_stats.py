@@ -1,13 +1,12 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-26 11:46:57 (ywatanabe)"
+# Time-stamp: "2024-08-30 01:33:41 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
 """
 This script does XYZ.
 """
-
 
 """
 Imports
@@ -33,7 +32,7 @@ import torch.nn.functional as F
 import xarray as xr
 from icecream import ic
 from natsort import natsorted
-from scipy.stats import rankdata
+from scipy.stats import gaussian_kde, rankdata
 from tqdm import tqdm
 
 # import joypy
@@ -67,296 +66,237 @@ import seaborn as sns
 from scipy import stats
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-
-def under_sample(df, cols_NT):
-    # Balance the number of samples
-    n_min = np.inf
-    for col in cols_NT:
-        nn = (~df[col].isna()).sum()
-        n_min = min(n_min, nn)
-
-    for col in cols_NT:
-        non_nan_mask = ~df[col].isna()
-        indi = non_nan_mask[non_nan_mask].index
-        indi_balanced = np.random.permutation(indi)[:n_min]
-        tmp = df[col][indi_balanced]
-        df[col] = np.nan
-        df.loc[indi_balanced, col] = tmp
-
-    for col in cols_NT:
-        assert (~df[col].isna()).sum() == n_min
-
-    return df
+PHASES_TO_PLOT = ["Encoding", "Retrieval"]
 
 
-def NT_to_rank(df, cols_NT):
-    df_info = df[list(set(df.columns) - set(cols_NT))].copy()  # (9860, 4)
-    df_NT = df[cols_NT].copy()  # (9860, 8)
-    df_rank = np.nan * df_NT.copy()  # (9860, 8)
+def run_pairwise_stats_test(df):
+    _df = mngs.pd.merge_cols(df, "group", "match")
 
-    for col_session in df["sub_session_roi"].unique():
-        indi_session = df["sub_session_roi"] == col_session
+    df_stats = []
+    for g1, g2 in combinations(_df.merged.unique(), 2):
+        group1 = _df.loc[_df.merged == g1, "dist"]
+        group2 = _df.loc[_df.merged == g2, "dist"]
 
-        # Slice the session data
-        NT_session = np.array(df_NT)[indi_session]  # (1000, 8)
-        rank_session = np.full(NT_session.shape, np.nan)  # (1000, 8)
+        # Undersample to the size of the smaller group
+        min_size = min(len(group1), len(group2))
 
-        # NT to rank
-        non_nan_mask = ~np.isnan(NT_session)
-        rank_session[non_nan_mask] = rankdata(
-            NT_session[non_nan_mask]
-        )  # , method="average"
+        sampled_group1 = np.random.choice(group1, size=min_size, replace=False)
+        sampled_group2 = np.random.choice(group2, size=min_size, replace=False)
 
-        # Buffering
-        df_rank[indi_session] = rank_session
-
-    val_rank_max = np.array(df_NT)[np.where(df_rank == np.nanmax(df_rank))]
-    val_rank_min = np.array(df_NT)[np.where(df_rank == np.nanmin(df_rank))]
-    # print(val_rank_max)
-    # print(val_rank_min)
-
-    return pd.concat([df_info, df_rank], axis=1)
-
-
-def perform_pairwise_statistical_test(df, cols_NT):
-
-    results = []
-    for col1, col2 in combinations(cols_NT, 2):
-
-        x1 = df[col1]
-        x2 = df[col2]
-
-        x1 = x1[~np.isnan(x1)]
-        x2 = x2[~np.isnan(x2)]
-
-        statistic, p_value = stats.wilcoxon(x1, x2)
+        statistic, p_value = stats.wilcoxon(sampled_group1, sampled_group2)
 
         result = {
-            "col1": col1,
-            "col2": col2,
+            "group_1": g1,
+            "group_2": g2,
             "statistic": statistic,
             "p_val_unc": p_value,
         }
 
-        results.append(pd.Series(result))
+        df_stats.append(pd.Series(result))
 
-    results = pd.DataFrame(results)
-    results["p_val"] = (results["p_val_unc"] * len(results)).clip(upper=1.0)
+    df_stats = pd.DataFrame(df_stats)
+    df_stats["p_val"] = (df_stats["p_val_unc"] * len(df_stats)).clip(upper=1.0)
+    df_stats["statistic"] = df_stats["statistic"].astype(int)
+    df_stats["p_val_unc"] = df_stats["p_val_unc"].round(4)
+    df_stats["p_val"] = df_stats["p_val"].round(4)
 
-    results["statistic"] = results["statistic"].astype(int)
-    results["p_val_unc"] = results["p_val_unc"].round(3)
-    results["p_val"] = results["p_val"].round(3)
+    # Organizing the df_stats
+    pivot = df_stats.pivot(index="group_1", columns="group_2", values="p_val")
+    pivot = pivot.combine_first(pivot.T)
+    pivot = pivot.fillna(1.0)
+    np.fill_diagonal(pivot.values, 1.0)  # Set diagonal to 1.0
 
-    print(results.sort_values(["p_val"]))
+    # Sort the pivot table
+    columns = [
+        "group-$g_E-NT_E$_match-1.0",
+        "group-$g_E-NT_R$_match-1.0",
+        "group-$g_R-NT_E$_match-1.0",
+        "group-$g_R-NT_R$_match-1.0",
+        "group-$g_E-NT_E$_match-2.0",
+        "group-$g_E-NT_R$_match-2.0",
+        "group-$g_R-NT_E$_match-2.0",
+        "group-$g_R-NT_R$_match-2.0",
+    ]
+    pivot = pivot.reindex(index=columns, columns=columns)
 
-
-# def plot_box(df, cols_NT):
-#     fig, ax = mngs.plt.subplots()
-#     df_plot = df[cols_NT]
-#     df_plot = df_plot.melt()
-#     ax.sns_boxplot(
-#         data=df_plot[~df_plot.value.isna()],
-#         x="variable",
-#         y="value",
-#     )
-#     return fig
-
-
-# # Working
-# def plot_violin(df, cols_NT):
-#     fig, ax = mngs.plt.subplots(figsize=(10, 6))
-#     df_plot = df[cols_NT].melt()
-#     sns.violinplot(
-#         data=df_plot[~df_plot.value.isna()],
-#         x="variable",
-#         y="value",
-#         ax=ax,
-#         inner="quartile",
-#     )
-#     ax.set_title("Distribution of Ranked Data")
-#     ax.set_xlabel("Variables")
-#     ax.set_ylabel("Rank")
-#     return fig
+    return pivot
 
 
-def plot_violin(df, cols_NT):
+def plot_p_values(pivot):
+
+    # Create heatmap
     fig, ax = mngs.plt.subplots()
-    df_plot = df[cols_NT].melt()
-
-    ax.sns_violinplot(
-        data=df_plot[~df_plot.value.isna()],
-        x="variable",
-        y="value",
-        inner="quartile",
+    ax.imshow2d(pivot, vmin=0, vmax=1.0, cmap="viridis_r")
+    ax.set_xyt(None, None, "P-values for Group Comparisons")
+    ax.set_ticks(
+        xvals="auto",
+        xticks=pivot.columns,
+        yvals="auto",
+        yticks=pivot.index,
     )
     return fig
 
 
-def plot_joy(df, cols_NT):
-    df_plot = df[cols_NT]
-    fig, ax = mngs.plt.subplots()
-    ax.joyplot(df[cols_NT])
-    # fig, axes = joypy.joyplot(
-    #     data=df_plot,
-    #     colormap=plt.cm.viridis,
-    #     title="Distribution of Ranked Data",
-    #     labels=cols_NT,
-    #     overlap=0.5,
-    #     orientation="vertical",
-    # )
-    # plt.xlabel("Variables")
-    # plt.ylabel("Rank")
-    return fig
+# def define_color(col):
+#     if "g_E-NT_E" in col:
+#         return "blue"
+#     elif "g_E-NT_R" in col:
+#         return "light_blue"
+#     elif "g_R-NT_E" in col:
+#         return "pink"
+#     elif "g_R-NT_R" in col:
+#         return "red"
 
 
-# # working
-# def plot_kde(df, cols_NT):
-#     fig, ax = plt.subplots(figsize=(10, 6))
-#     for col in cols_NT:
-
-#         color = define_color(col)
-#         linestyle = "-" if "1.0" in col else "--"
-
-#         sns.kdeplot(
-#             data=df[col],
-#             ax=ax,
-#             vertical=False,
-#             label=col,
-#             color=CC[color],
-#             linestyle=linestyle,
-#         )
-#     ax.set_title("Distribution of Ranked Data")
-#     ax.set_ylabel("KDE")
-#     ax.set_xlabel("Ranked distance")
-#     ax.legend()
-#     return fig
-
-
-def define_color(col):
-    if "g_E-NT_E" in col:
-        return "blue"
-    elif "g_E-NT_R" in col:
-        return "light_blue"
-    elif "g_R-NT_E" in col:
-        return "pink"
-    elif "g_R-NT_R" in col:
-        return "red"
-
-
-def plot_kde(df, cols_NT):
-    # Data Preparation
-    df_melt = df[cols_NT].melt()
-    df_melt = df_melt.rename(
-        columns={"variable": "Group", "value": "Ranked Distance"}
-    )
-    df_melt = df_melt.dropna()
-
-    df_melt["Group"] = df_melt["Group"].replace(
-        {"1.0-": "Match IN: ", "2.0-": "Mismatch OUT: "},  # , "-NT": "--NT"
+def rename_phases(df):
+    df["phase_combi"] = df["phase_combi"].replace(
+        {
+            "phase_g-Encoding": "$g_{E}$",
+            "phase_g-Retrieval": "$g_{R}$",
+            "_phase_nt-Encoding": "-$NT_{E}$",
+            "_phase_nt-Retrieval": "-$NT_{R}$",
+        },
         regex=True,
     )
+    return df
 
-    # hue_colors = {
-    #     "Match IN: $g_E-NT_E$": CC["blue"],
-    #     "Match IN: $g_E-NT_R$": CC["light_blue"],
-    #     "Match IN: $g_R-NT_E$": CC["pink"],
-    #     "Match IN: $g_R-NT_R$": CC["red"],
-    #     "Mismatch OUT: $g_E-NT_E$": CC["blue"],
-    #     "Mismatch OUT: $g_E-NT_R$": CC["light_blue"],
-    #     "Mismatch OUT: $g_R-NT_E$": CC["pink"],
-    #     "Mismatch OUT: $g_R-NT_R$": CC["red"],
-    # }
 
-    # how can I replace CC["*"], to "*" on emacs?
+def dist2rank(df):
+    """Converts distance to rank data in each session."""
 
-    hue_colors = {
-        "Match IN: $g_E-NT_E$": CC["blue"],
-        "Match IN: $g_E-NT_R$": CC["light_blue"],
-        "Match IN: $g_R-NT_E$": CC["pink"],
-        "Match IN: $g_R-NT_R$": CC["red"],
-        "Mismatch OUT: $g_E-NT_E$": CC["blue"],
-        "Mismatch OUT: $g_E-NT_R$": CC["light_blue"],
-        "Mismatch OUT: $g_R-NT_E$": CC["pink"],
-        "Mismatch OUT: $g_R-NT_R$": CC["red"],
-    }
-    hue_order = list(hue_colors.keys())
-    hue_line_styles = {
-        "Match IN: $g_E-NT_E$": "-",
-        "Match IN: $g_E-NT_R$": "-",
-        "Match IN: $g_R-NT_E$": "-",
-        "Match IN: $g_R-NT_R$": "-",
-        "Mismatch OUT: $g_E-NT_E$": "--",
-        "Mismatch OUT: $g_E-NT_R$": "--",
-        "Mismatch OUT: $g_R-NT_E$": "--",
-        "Mismatch OUT: $g_R-NT_R$": "--",
-    }
+    def rank_session(group):
+        group["dist"] = mngs.gen.to_rank(group["dist"])
+        return group
 
-    # Main
-    fig, ax = mngs.plt.subplots()
-    ax.sns_kdeplot(
-        data=df_melt,
-        x="Ranked Distance",
-        hue="Group",
-        hue_order=hue_order,
-        hue_colors=hue_colors,
+    return df.groupby("global_session", group_keys=False).apply(rank_session)
+
+
+def calc_kde(df, n_points=100):
+
+    xmin = df.dist.min()
+    xmax = df.dist.max()
+
+    kde_values = []
+
+    for ses in df["global_session"].unique():
+        df_ses = df[df["global_session"] == ses]
+        for match in CONFIG.MATCHES:
+            df_ses_m = df_ses[df_ses.match == match]
+            for phase in df_ses["phase_combi"].unique():
+                data = df_ses_m[df_ses_m["phase_combi"] == phase]["dist"]
+                kde = gaussian_kde(data)
+                xx = np.linspace(xmin, xmax, n_points)
+                yy = kde(xx)
+
+                kde_values.append(
+                    {
+                        "global_session": ses,
+                        "match": match,
+                        "phase_combi": phase,
+                        "xx": xx,
+                        "yy": yy,
+                    }
+                )
+    return pd.DataFrame(kde_values)
+
+
+def calc_kde_mean_std(df):
+    mngs.pd.merge_cols(df, "phase_combi", "match", name="phase_combi_match")
+    df = (
+        df.groupby(["phase_combi_match"])
+        .agg(
+            {
+                "xx": [
+                    lambda x: x.iloc[0]
+                ],  # Take the first list as it's identical
+                "yy": [
+                    lambda x: np.mean(np.array(x.tolist()), axis=0),
+                    lambda x: np.std(np.array(x.tolist()), axis=0),
+                    lambda x: len(x),
+                ],
+            }
+        )
+        .reset_index()
     )
-    # fig, ax = plt.subplots()
-    # sns.kdeplot(
-    #     data=df_melt,
-    #     x="Ranked Distance",
-    #     hue="Group",
-    #     hue_order=hue_order,
-    #     palette=hue_colors,
-    #     ax=ax,
-    # )
 
-    # Apply line styles
-    for line, group in zip(ax.lines, hue_order):
-        line.set_linestyle(hue_line_styles[group])
+    # Rename columns
+    df.columns = ["phase_combi_match", "xx", "yy_mean", "yy_std", "yy_count"]
 
+    # ci
+    df["yy_ci"] = 1.96 * (df["yy_std"] / np.sqrt(df["yy_count"]))
+
+    return df
+
+
+def parse_match(df):
+    df["match"] = np.nan
+    df.loc[mngs.gen.search("match-1", df["phase_combi_match"])[0], "match"] = 1
+    df.loc[mngs.gen.search("match-2", df["phase_combi_match"])[0], "match"] = 2
+    return df
+
+
+def plot_kde(df):
+    # Plotting
+    fig, axes = mngs.plt.subplots(
+        ncols=len(df.match.unique()), sharex=True, sharey=True
+    )
+    for _, row in df.iterrows():
+        label = row.phase_combi_match
+        ax = axes[0] if row.match == 1 else axes[1]
+        ax.plot_with_ci(
+            row.xx,
+            row.yy_mean,
+            row.yy_std,
+            alpha=0.1,
+            label=label,
+            id=label,
+        )
+        ax.legend()
     return fig
 
 
 def main():
-    # Loading
-    LPATHS = mngs.io.glob("./scripts/NT/distance/plot_dists/*.csv")
-    df = pd.concat([mngs.io.load(lpath) for lpath in LPATHS]).reset_index()
-    df = df.drop(columns=["index"])
 
-    mngs.pd.merge_cols(df, "sub", "session", "roi")
-    cols_NT = mngs.gen.search("NT", df.columns)[1]
+    df = mngs.io.load("./data/CA1/dist.csv")
 
-    df = under_sample(df, cols_NT)
+    mngs.pd.merge_cols(df, "sub", "session", name="global_session")
+    mngs.pd.merge_cols(df, "phase_g", "phase_nt", name="phase_combi")
 
-    # Smaller rank represents smaller distance
-    df = NT_to_rank(df, cols_NT)
+    df = rename_phases(df)
+    df = dist2rank(df)
 
-    # Plotting
-    # fig = plot_box(df, cols_NT)
-    # fig = plot_joy(df, cols_NT)
-    fig = plot_kde(df, cols_NT)
-    plt.show()
-    __import__("ipdb").set_trace()
+    df_stats = run_pairwise_stats_test(df)
+    fig_pvals = plot_p_values(df_stats)
 
-    perform_pairwise_statistical_test(df, cols_NT)
+    df = calc_kde(df)
 
-    __import__("ipdb").set_trace()
+    df = calc_kde_mean_std(df)
 
+    df = parse_match(df)
 
-# def perform_kruskal_wallis(df, cols_NT):
-#     results = []
-#     for col in cols_NT:
-#         __import__("ipdb").set_trace()
-#         groups = [group[~np.isnan(group)] for _, group in df.groupby('session')[col] if not group.empty]
-#         print(groups)
+    df = mngs.pd.replace(
+        df,
+        {"phase_combi-": "", "_match-1": "", "_match-2": ""},
+        cols=["phase_combi_match"],
+    )
 
-#         h_statistic, p_value = stats.kruskal(*groups)
-#         results.append({
-#             'column': col,
-#             'H-statistic': h_statistic,
-#             'p-value': p_value
-#         })
-#     return pd.DataFrame(results)
+    fig_kde = plot_kde(df)
+
+    # Saving
+    SDIR = "./data/CA1/dist_rank_summary/"
+    mngs.io.save(fig_pvals, SDIR + "pvals.jpg", from_cwd=True)
+    mngs.io.save(fig_pvals.to_sigma(), SDIR + "pvals.csv", from_cwd=True)
+    # mngs.io.save(df_stats, SDIR + "pvals.csv", from_cwd=True)
+    mngs.io.save(
+        fig_kde,
+        SDIR + "kde.jpg",
+        from_cwd=True,
+    )
+    mngs.io.save(
+        fig_kde.to_sigma(),
+        SDIR + "kde.csv",
+        from_cwd=True,
+    )
 
 
 if __name__ == "__main__":
@@ -373,6 +313,7 @@ if __name__ == "__main__":
         plt,
         verbose=False,
         line_width=1.0,
+        agg=True,
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
