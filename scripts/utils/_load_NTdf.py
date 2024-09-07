@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-12 00:52:52 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/utils/_load_NTdf.py

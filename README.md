@@ -20,8 +20,6 @@
 ./scripts/NT/clf/linearSVC.py
 ./scripts/NT/geometrics_medians.py
 ./scripts/NT/distance/dists_stats.py
-
-
 ```
 
 #### Figures

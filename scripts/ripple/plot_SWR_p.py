@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-10 00:18:55 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/plot_SWR_p.py

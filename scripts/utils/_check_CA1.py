@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-08 09:14:48 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/check_CA1.py

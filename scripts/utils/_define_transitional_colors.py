@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-12 01:02:35 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/utils/_define_transition_colors.py

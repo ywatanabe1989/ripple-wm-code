@@ -1,6 +1,6 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-22 10:58:38 (ywatanabe)"
+# Time-stamp: "2024-09-07 10:54:09 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -10,56 +10,33 @@ This script does XYZ.
 """
 Imports
 """
-import importlib
-import logging
 import os
-import re
 import sys
 import warnings
 from functools import partial
-from glob import glob
-from pprint import pprint
 
-import matplotlib
 import matplotlib.pyplot as plt
 import mngs
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
-from scripts import utils
+from scripts.utils import sort_phases
 from sklearn.dummy import DummyClassifier
-from sklearn.metrics import balanced_accuracy_score, confusion_matrix
-from sklearn.model_selection import (
-    RepeatedStratifiedKFold,
-    StratifiedKFold,
-    cross_val_score,
-    train_test_split,
-)
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.model_selection import (RepeatedStratifiedKFold, cross_val_score,
+                                     train_test_split)
 from sklearn.svm import LinearSVC as SVC
 from tqdm import tqdm
 
 """
 Warnings
 """
-# warnings.simplefilter("ignore", UserWarning)
-
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
+warnings.simplefilter("ignore", RuntimeWarning)
+# with warnings.catch_warnings():
+#     warnings.simplefilter("ignore", RuntimeWarning)
 
 """
 Functions & Classes
 """
-
-N_REPEAT = 100
-N_CV = 10
 
 
 def NT_to_X_T_C(NT, trials_info):
@@ -77,13 +54,19 @@ def NT_to_X_T_C(NT, trials_info):
         ]
         T[phase] = np.full(len(X[phase]), phase)
         assert len(X[phase]) == len(trials_info)
-        C[phase] = trials_info["set_size_match"]
+        C[phase] = trials_info["merged"]
 
     X = np.stack(list(X.values()), axis=1)
     T = np.stack(list(T.values()), axis=1)
     X = X.reshape(X.shape[0] * X.shape[1], -1)
     T = T.reshape(-1)
     C = np.stack(list(C.values()), axis=-1).reshape(-1)
+
+    indi_task = mngs.gen.search(CONFIG.PHASES_TASK, T)[0]
+
+    X = X[indi_task]
+    T = T[indi_task]
+    C = C[indi_task]
 
     return X, T, C
 
@@ -101,7 +84,7 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
         T_train, T_test = T[train_index], T[test_index]
         _, C_test = C[train_index], C[test_index]
 
-        # Trains the classifier with full training data
+        # Trains the classifier "with full training data"
         clf.fit(X_train, T_train)
         T_pred = clf.predict(X_test)
 
@@ -120,12 +103,7 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info):
                 y_true=T_test[indi],
                 y_pred=T_pred[indi],
                 labels=clf.classes_,
-                sorted_labels=[
-                    "Fixation",
-                    "Encoding",
-                    "Maintenance",
-                    "Retrieval",
-                ],
+                sorted_labels=sort_phases(clf.classes_),
             )
             plt.close()
 
@@ -185,7 +163,7 @@ def calc_folds(NT, trials_info, dummy):
 
     # CV maintener
     rskf = RepeatedStratifiedKFold(
-        n_splits=N_CV, n_repeats=N_REPEAT, random_state=42
+        n_splits=CONFIG.N_CV, n_repeats=CONFIG.N_REPEAT, random_state=42
     )
 
     # Classifier
@@ -287,8 +265,8 @@ def format_conf_mats_all(conf_mats_all):
 
     index = columns = list(conf_mats_all.iloc[0]["conf_mat"].index)
     my_sum = partial(_my_calc, func=np.nansum, index=index, columns=columns)
-    my_mean = partial(_my_calc, func=np.nanmean, index=index, columns=columns)
-    my_std = partial(_my_calc, func=np.nanstd, index=index, columns=columns)
+    # my_mean = partial(_my_calc, func=np.nanmean, index=index, columns=columns)
+    # my_std = partial(_my_calc, func=np.nanstd, index=index, columns=columns)
 
     conf_mats_all = conf_mats_all.groupby(["classifier", "condition"]).agg(
         {"conf_mat": [("sum", my_sum)]}
@@ -303,17 +281,28 @@ def format_conf_mats_all(conf_mats_all):
 
 
 def main():
+    # Params ----------------------------------------
+    CONFIG.N_REPEAT = 100
+    CONFIG.N_CV = 10
+    CONFIG.PHASES_TASK = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+    # CONFIG.PHASES_TASK = ["Encoding", "Retrieval"]
+    CONFIG.SPATH_PREFFIX = f"./data/CA1/svc/{'_'.join(CONFIG.PHASES_TASK)}/"
+
+    # Calculation ----------------------------------------
     metrics_all = []
     conf_mats_all = []
-
-    # Calculation
-    for ca1 in CONFIG.ROI.CA1:
+    for ca1 in tqdm(CONFIG.ROI.CA1):
         NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
         trials_info = mngs.io.load(
             mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
         )
-        metrics, conf_mats = main_NT(NT, trials_info)
+        metrics, conf_mats = main_NT(
+            NT,
+            trials_info,
+        )
 
+        # metrics = {metrics[k]: v for k, v in ca1.items()}
+        # conf_mats = {conf_mats[k]: v for k, v in ca1.items()}
         for k, v in ca1.items():
             metrics[k] = v
             conf_mats[k] = v
@@ -321,23 +310,23 @@ def main():
         # Buffering
         metrics_all.append(metrics)
         conf_mats_all.append(conf_mats)
-
     # Summary
     metrics_all = format_metrics_all(pd.concat(metrics_all))
     conf_mats_all = format_conf_mats_all(pd.concat(conf_mats_all))
 
-    # Cache
+    # Cache ----------------------------------------
     metrics_all, conf_mats_all = mngs.io.cache(
         "id_31024987",
         "metrics_all",
         "conf_mats_all",
     )
 
-    # Saving
-
+    # Saving ----------------------------------------
     # Metrics
     mngs.io.save(
-        metrics_all, "./data/NT/LinearSVC/metrics_all.csv", from_cwd=True
+        metrics_all,
+        CONFIG.SPATH_PREFFIX + f"metrics_all.csv",
+        from_cwd=True,
     )
 
     # weights and biases
@@ -351,7 +340,7 @@ def main():
 
     mngs.io.save(
         weights_and_biases,
-        "./data/NT/LinearSVC/weights_and_biases.pkl",
+        CONFIG.SPATH_PREFFIX + "weights_and_biases.pkl",
         from_cwd=True,
     )
 
@@ -365,22 +354,32 @@ def main():
             fig, cm = mngs.ml.plt.conf_mat(plt, cm=cm, title=string)
             mngs.io.save(
                 fig,
-                f"./data/NT/LinearSVC/conf_mat/figs/{string}.jpg",
+                CONFIG.SPATH_PREFFIX + f"conf_mat/figs/{string}.jpg",
                 from_cwd=True,
             )
             mngs.io.save(
                 cm,
-                f"./data/NT/LinearSVC/conf_mat/csv/{string}.csv",
+                CONFIG.SPATH_PREFFIX + f"conf_mat/csv/{string}.csv",
                 from_cwd=True,
             )
+            mngs.io.save(
+                mngs.pd.to_xyz(cm),
+                CONFIG.SPATH_PREFFIX + f"conf_mat/csv/xyz/{string}_xyz.csv",
+                from_cwd=True,
+            )
+
             plt.close()
 
 
 if __name__ == "__main__":
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
-        sys, plt, verbose=False, agg=True
+        sys,
+        plt,
+        verbose=False,
+        agg=True,
     )
     main()
+    # to_xyz()
     mngs.gen.close(CONFIG, verbose=False, notify=True)
 
 # EOF

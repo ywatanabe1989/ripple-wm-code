@@ -1,6 +1,6 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-30 01:33:41 (ywatanabe)"
+# Time-stamp: "2024-09-03 18:38:12 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -109,12 +109,12 @@ def run_pairwise_stats_test(df):
     # Sort the pivot table
     columns = [
         "group-$g_E-NT_E$_match-1.0",
-        "group-$g_E-NT_R$_match-1.0",
         "group-$g_R-NT_E$_match-1.0",
+        "group-$g_E-NT_R$_match-1.0",
         "group-$g_R-NT_R$_match-1.0",
         "group-$g_E-NT_E$_match-2.0",
-        "group-$g_E-NT_R$_match-2.0",
         "group-$g_R-NT_E$_match-2.0",
+        "group-$g_E-NT_R$_match-2.0",
         "group-$g_R-NT_R$_match-2.0",
     ]
     pivot = pivot.reindex(index=columns, columns=columns)
@@ -285,7 +285,9 @@ def main():
     # Saving
     SDIR = "./data/CA1/dist_rank_summary/"
     mngs.io.save(fig_pvals, SDIR + "pvals.jpg", from_cwd=True)
-    mngs.io.save(fig_pvals.to_sigma(), SDIR + "pvals.csv", from_cwd=True)
+    mngs.io.save(
+        mngs.pd.to_xyz(fig_pvals.to_sigma()), SDIR + "pvals.csv", from_cwd=True
+    )
     # mngs.io.save(df_stats, SDIR + "pvals.csv", from_cwd=True)
     mngs.io.save(
         fig_kde,
@@ -314,6 +316,7 @@ if __name__ == "__main__":
         verbose=False,
         line_width=1.0,
         agg=True,
+        np=np,
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)

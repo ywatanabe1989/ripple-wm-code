@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-11 14:16:03 (ywatanabe)"
 # calc_NT_with_GPFA.py

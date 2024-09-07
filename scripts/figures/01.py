@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-06 18:20:08 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/figures/01.py

@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-08-22 13:27:33 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/geometrics_medians.py

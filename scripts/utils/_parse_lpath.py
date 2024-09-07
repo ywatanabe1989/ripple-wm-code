@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-08 20:43:38 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/utils/parse_lpath.py

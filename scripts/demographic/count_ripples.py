@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-06 14:55:29 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/demographic/electrode_positions.py
