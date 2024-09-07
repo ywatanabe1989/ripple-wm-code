@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-07 22:11:07 (ywatanabe)"
+# Time-stamp: "2024-09-07 22:02:22 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -10,6 +10,7 @@ This script does XYZ.
 """
 Imports
 """
+import multiprocessing
 import sys
 import warnings
 from functools import partial
@@ -301,36 +302,64 @@ def format_gs(GS):
     return X[indi_task], T[indi_task], C[indi_task]
 
 
+def process_ca1(ca1):
+    NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
+    GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS, ca1))
+    trials_info = mngs.io.load(mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1))
+    metrics, conf_mats = main_NT(NT, trials_info, GS)
+
+    for k, v in ca1.items():
+        metrics[k] = v
+        conf_mats[k] = v
+
+    return metrics, conf_mats
+
+
 def main():
     # Params ----------------------------------------
     CONFIG.N_REPEAT = 100
     CONFIG.N_CV = 10
-    CONFIG.PHASES_TASK = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
-    # CONFIG.PHASES_TASK = ["Encoding", "Retrieval"]
+    # CONFIG.PHASES_TASK = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+    CONFIG.PHASES_TASK = ["Encoding", "Retrieval"]
     CONFIG.SPATH_PREFFIX = f"./data/CA1/svc/{'_'.join(CONFIG.PHASES_TASK)}/"
 
+    # # Calculation ----------------------------------------
+    # metrics_all = []
+    # conf_mats_all = []
+    # for ca1 in tqdm(CONFIG.ROI.CA1):
+    #     NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
+    #     GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS, ca1))
+    #     trials_info = mngs.io.load(
+    #         mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
+    #     )
+    #     metrics, conf_mats = main_NT(
+    #         NT,
+    #         trials_info,
+    #         GS,
+    #     )
+
+    #     for k, v in ca1.items():
+    #         metrics[k] = v
+    #         conf_mats[k] = v
+
+    #     # Buffering
+    #     metrics_all.append(metrics)
+    #     conf_mats_all.append(conf_mats)
+    # # Summary
+    # metrics_all = format_metrics_all(pd.concat(metrics_all))
+    # conf_mats_all = format_conf_mats_all(pd.concat(conf_mats_all))
+
     # Calculation ----------------------------------------
-    metrics_all = []
-    conf_mats_all = []
-    for ca1 in tqdm(CONFIG.ROI.CA1):
-        NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
-        GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS, ca1))
-        trials_info = mngs.io.load(
-            mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
-        )
-        metrics, conf_mats = main_NT(
-            NT,
-            trials_info,
-            GS,
-        )
+    pool = multiprocessing.Pool()
+    results = list(
+        tqdm(pool.imap(process_ca1, CONFIG.ROI.CA1), total=len(CONFIG.ROI.CA1))
+    )
+    pool.close()
+    pool.join()
 
-        for k, v in ca1.items():
-            metrics[k] = v
-            conf_mats[k] = v
+    metrics_all = [result[0] for result in results]
+    conf_mats_all = [result[1] for result in results]
 
-        # Buffering
-        metrics_all.append(metrics)
-        conf_mats_all.append(conf_mats)
     # Summary
     metrics_all = format_metrics_all(pd.concat(metrics_all))
     conf_mats_all = format_conf_mats_all(pd.concat(conf_mats_all))
