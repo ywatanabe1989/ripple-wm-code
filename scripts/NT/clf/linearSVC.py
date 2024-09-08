@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-07 22:11:07 (ywatanabe)"
+# Time-stamp: "2024-09-08 11:40:44 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -26,6 +26,9 @@ from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.svm import LinearSVC as SVC
 from tqdm import tqdm
 
+# Params
+# PHASE_TASKS = ["Encoding", "Retrieval"]
+PHASES_TASK = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
 """
 Warnings
 """
@@ -102,7 +105,7 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS):
         for condition in conditions_uq + ["all"]:
 
             indi = (
-                C_test != "geometric median"
+                C_test != "geometric_median"
                 if condition == "all"
                 else C_test == condition
             )
@@ -296,7 +299,7 @@ def format_gs(GS):
     X = X[..., np.newaxis]
     X = np.repeat(X, 20, axis=-1).reshape(len(X), -1)
     T = np.array(GS.columns)
-    C = np.full(len(X), "geometric median")
+    C = np.full(len(X), "geometric_median")
     indi_task = mngs.gen.search(CONFIG.PHASES_TASK, T)[0]
     return X[indi_task], T[indi_task], C[indi_task]
 
@@ -305,8 +308,7 @@ def main():
     # Params ----------------------------------------
     CONFIG.N_REPEAT = 100
     CONFIG.N_CV = 10
-    CONFIG.PHASES_TASK = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
-    # CONFIG.PHASES_TASK = ["Encoding", "Retrieval"]
+    CONFIG.PHASES_TASK = PHASE_TASKS
     CONFIG.SPATH_PREFFIX = f"./data/CA1/svc/{'_'.join(CONFIG.PHASES_TASK)}/"
 
     # Calculation ----------------------------------------
