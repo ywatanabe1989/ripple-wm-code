@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-08 17:04:46 (ywatanabe)"
+# Time-stamp: "2024-09-09 08:19:56 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -27,8 +27,8 @@ from sklearn.svm import LinearSVC as SVC
 from tqdm import tqdm
 
 # Params
-PHASES_TASKS = ["Encoding", "Retrieval"]
-# PHASES_TASKS = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+# PHASES_TASKS = ["Encoding", "Retrieval"]
+PHASES_TASKS = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
 """
 Warnings
 """

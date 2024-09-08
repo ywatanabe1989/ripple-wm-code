@@ -15,11 +15,14 @@
 ./scripts/demographic/all.sh
 ./scripts/ripple/all.sh
 ./scripts/NT/all.sh
-./scripts/NT/visualization/kde.py
+./scripts/NT/visualization/custom_jointplot.py
+./scripts/NT/visualization/kde_8_factors.py
 ./scripts/NT/visualization/umap_8_factors.py
+./scripts/NT/distance/geometrics_medians.py
 ./scripts/NT/clf/linearSVC.py
-./scripts/NT/geometrics_medians.py
+
 ./scripts/NT/distance/dists_stats.py
+./scripts/NT/distance/
 ```
 
 #### Figures

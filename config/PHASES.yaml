@@ -11,9 +11,9 @@ PHASES:
     mid:
       10
     mid_start:
-      0
+      5
     mid_end:
-      20
+      15
   "Encoding":
     color:
       "blue"
@@ -26,9 +26,9 @@ PHASES:
     mid:
       40
     mid_start:
-      30
+      35
     mid_end:
-      50
+      45
   "Maintenance":
     color:
       "green"
@@ -41,9 +41,9 @@ PHASES:
     mid:
       80
     mid_start:
-      70
+      75
     mid_end:
-      90
+      85
   "Retrieval":
     color:
       "red"
@@ -56,9 +56,9 @@ PHASES:
     mid:
       140
     mid_start:
-      130
+      135
     mid_end:
-      150
+      145
 
 
 

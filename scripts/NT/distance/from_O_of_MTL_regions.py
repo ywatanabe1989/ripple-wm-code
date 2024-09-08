@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-08 23:30:38 (ywatanabe)"
+# Time-stamp: "2024-09-09 07:17:41 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -23,7 +23,7 @@ except Exception as e:
     pass
 
 """Config"""
-# CONFIG = mngs.gen.load_configs()
+CONFIG = mngs.gen.load_configs()
 
 """Functions & Classes"""
 
@@ -36,18 +36,6 @@ def load_trajs():
         lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
         traj[mtl] = np.vstack([mngs.io.load(lpath) for lpath in lpaths_mtl])
     return traj
-
-
-# def load_gs():
-#     LPATHS = mngs.io.glob(CONFIG.PATH.NT_GS)
-#     LPATHS = mngs.gen.search(["Session_01", "Session_02"], LPATHS)[1]
-#     gs = {}
-#     for mtl in CONFIG.ROI.MTL.keys():
-#         lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
-#         stacked = np.stack([mngs.io.load(lpath) for lpath in lpaths_mtl])
-#         nan_mask = np.isnan(stacked).any(axis=(-2, -1))
-#         gs[mtl] = stacked[~nan_mask]
-#     return gs
 
 
 def calc_dist(traj_MTL_region):
@@ -136,8 +124,33 @@ def main():
     )
 
     # Distance between phases
-    traj
-    gs = load_gs()
+    tt = traj["HIP"]
+    nan_mask = np.isnan(tt).any(axis=(-2, -1))
+    tt = tt[~nan_mask]
+
+    gs = np.stack(
+        [
+            mngs.linalg.geometric_median(
+                tt[..., v.mid_start : v.mid_end], axis=-1
+            )
+            for k, v in CONFIG.PHASES.items()
+        ],
+        axis=-1,
+    )
+
+    from itertools import combinations
+
+    from IPython import embed
+
+    embed()
+
+    count = 0
+    for ii, jj in combinations(np.arange(gs.shape[-1]), 2):  # 12 patterns
+        count += 1
+        print(count)
+        dist_between_gs = mngs.linalg.cdist(gs[..., ii], gs[..., jj])
+
+    # gs = load_gs()
     __import__("ipdb").set_trace()
 
 
@@ -151,18 +164,6 @@ if __name__ == "__main__":
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
-
-tt = traj["HIP"]
-nan_mask = np.isnan(tt).any(axis=(-2, -1))
-tt = tt[~nan_mask]
-
-gs = np.stack(
-    [
-        mngs.linalg.geometric_median(tt[..., v.mid_start : v.mid_end], axis=-1)
-        for k, v in CONFIG.PHASES.items()
-    ],
-    axis=-1,
-)
 
 
 #     # Distance between gs
