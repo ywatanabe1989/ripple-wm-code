@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-08 00:37:19 (ywatanabe)"
+# Time-stamp: "2024-09-08 17:21:42 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/figures/01.py
 
 
@@ -81,6 +81,7 @@ def _load_data(correct_or_response_time):
     dfs = []
     for lpath in LPATHS:
         parsed = utils.parse_lpath(lpath)
+
         if int(parsed["sub"]) > CONFIG.SESSION.THRES:
             continue
 
@@ -121,6 +122,12 @@ def B():
     ax.set_xyt("Set size", "Response time [s]", None)
 
 
+def C():
+    LPATHS = mngs.gen.glob(CONFIG.PATH.NT_GS)
+    LPATHS = mngs.gen.search(CONFIG.ROI.MTL.HIP, LPATHS)[1]
+    LPATHS = mngs.gen.search(["Session_01", "Session_02"], LPATHS)[1]
+
+
 def main():
     fig_A = A()
     fig_B = B()
@@ -144,6 +151,7 @@ if __name__ == "__main__":
         font_size_axis_label=6,
         font_size_title=6,
         alpha=0.5,
+        dpi_display=100,
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)

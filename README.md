@@ -27,6 +27,7 @@
 ``` bash
 ./scripts/figures/01.py
 ./scripts/figures/02.py
+./scripts/figures/03.py
 ```
 
 

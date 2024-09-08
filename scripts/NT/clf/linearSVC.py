@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-08 11:40:44 (ywatanabe)"
+# Time-stamp: "2024-09-08 17:04:46 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -27,8 +27,8 @@ from sklearn.svm import LinearSVC as SVC
 from tqdm import tqdm
 
 # Params
-# PHASE_TASKS = ["Encoding", "Retrieval"]
-PHASES_TASK = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+PHASES_TASKS = ["Encoding", "Retrieval"]
+# PHASES_TASKS = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
 """
 Warnings
 """
@@ -102,7 +102,7 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS):
         T_pred = clf.predict(X_test)
 
         # Calculates conditional metrics
-        for condition in conditions_uq + ["all"]:
+        for condition in conditions_uq + ["geometric_median", "all"]:
 
             indi = (
                 C_test != "geometric_median"
@@ -308,7 +308,9 @@ def main():
     # Params ----------------------------------------
     CONFIG.N_REPEAT = 100
     CONFIG.N_CV = 10
-    CONFIG.PHASES_TASK = PHASE_TASKS
+    # CONFIG.N_REPEAT = 2
+    # CONFIG.N_CV = 2
+    CONFIG.PHASES_TASK = PHASES_TASKS
     CONFIG.SPATH_PREFFIX = f"./data/CA1/svc/{'_'.join(CONFIG.PHASES_TASK)}/"
 
     # Calculation ----------------------------------------
@@ -333,6 +335,7 @@ def main():
         # Buffering
         metrics_all.append(metrics)
         conf_mats_all.append(conf_mats)
+
     # Summary
     metrics_all = format_metrics_all(pd.concat(metrics_all))
     conf_mats_all = format_conf_mats_all(pd.concat(conf_mats_all))
