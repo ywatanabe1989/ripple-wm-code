@@ -1,6 +1,6 @@
-#!./.env/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:44:58 (ywatanabe)"
+# Time-stamp: "2024-09-09 08:45:47 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/figures/01.py
 
 
@@ -13,6 +13,7 @@ import sys
 import matplotlib.pyplot as plt
 import mngs
 import pandas as pd
+from scripts import utils
 
 """Config"""
 CONFIG = mngs.gen.load_configs()
@@ -22,6 +23,23 @@ CONFIG = mngs.gen.load_configs()
 
 
 def _load_data(correct_or_response_time):
+    """
+    Load and process data for a given measure.
+
+    Example
+    -------
+    df = load_data("correct")
+
+    Parameters
+    ----------
+    measure : str
+        Either "correct" or "response_time"
+
+    Returns
+    -------
+    pandas.DataFrame
+        Processed data with mean and std per set size
+    """
     LPATHS = mngs.gen.glob(CONFIG.PATH.TRIALS_INFO)
     dfs = []
     for lpath in LPATHS:
@@ -86,6 +104,7 @@ def E():
 
 
 def main():
+    """Executes main analysis and plotting routines."""
     fig_A = A()
     fig_B = B()
     fig_C = C()
@@ -95,7 +114,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
         plt,

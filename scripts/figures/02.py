@@ -1,58 +1,23 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-07-07 21:11:20 (ywatanabe)"
-# /mnt/ssd/ripple-wm-code/scripts/figures/01.py
+# /mnt/ssd/ripple-wm-code/scripts/figures/02.py
 
+"""This script does XYZ."""
 
-"""
-This script does XYZ.
-"""
-
-
-"""
-Imports
-"""
-import os
-import re
+"""Imports"""
 import sys
-import warnings
-from glob import glob
-from pprint import pprint
 
-import matplotlib
 import matplotlib.pyplot as plt
 import mngs
 import numpy as np
-import pandas as pd
-import seaborn as sns
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
-from tqdm import tqdm
-
-# sys.path = ["."] + sys.path
-from scripts import utils  # , load
 from scipy.stats import gaussian_kde
 
-"""
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
-
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
+"""Config"""
 CONFIG = mngs.gen.load_configs()
 
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def A():
@@ -142,14 +107,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
         plt,
