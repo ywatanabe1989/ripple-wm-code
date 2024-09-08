@@ -1,17 +1,14 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-11 14:16:03 (ywatanabe)"
+# Time-stamp: "2024-09-09 08:22:37 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script does XYZ."""
 
 
-"""
-Imports
-"""
+"""Imports"""
+import logging
 import re
 import sys
 from glob import glob
@@ -23,17 +20,13 @@ import numpy as np
 import quantities as pq
 from elephant.gpfa import GPFA
 from natsort import natsorted
-import logging
+from utils import parse_lpath
 
-"""
-Config
-"""
+"""Config"""
 CONFIG = mngs.gen.load_configs()
 
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def spiketimes_to_spiketrains(
@@ -58,15 +51,6 @@ def spiketimes_to_spiketrains(
         spike_trains_all_trials.append(spike_trains_trial)
 
     return spike_trains_all_trials
-
-
-from utils import parse_lpath
-
-# def parse_lpath(lpath):
-#     subject = re.findall(r"Sub_(\w{2})", lpath)[0]
-#     session = re.findall(r"Session_(\w{2})", lpath)[0]
-#     roi = re.findall(r"spike_times/(\w{2,3})\.pkl", lpath)[0]
-#     return subject, session, roi
 
 
 def switch_regarding_match(spike_trains, subject, session, match):
@@ -95,8 +79,7 @@ def main(match="all", without_retrieval_phase=False):
     BIN_SIZE = CONFIG.GPFA.BIN_SIZE_MS * pq.ms
 
     # Loads spike timings
-    # LPATHS_SPIKE_TIMES = mngs.gen.natglob("./data/Sub_*/Session_*/spike_times/*.pkl")
-    LPATHS_SPIKE_TIMES = mngs.gen.natglob(CONFIG.PATH.SPIKE_TIMES)
+    LPATHS_SPIKE_TIMES = mngs.gen.glob(CONFIG.PATH.SPIKE_TIMES)
 
     for lpath in LPATHS_SPIKE_TIMES:
         sub, session, roi = parse_lpath(lpath)
@@ -130,13 +113,6 @@ def main(match="all", without_retrieval_phase=False):
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
     # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False

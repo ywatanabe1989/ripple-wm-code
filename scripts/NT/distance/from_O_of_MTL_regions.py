@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 07:17:41 (ywatanabe)"
+# Time-stamp: "2024-09-09 08:42:31 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -123,36 +123,6 @@ def main():
         from_cwd=True,
     )
 
-    # Distance between phases
-    tt = traj["HIP"]
-    nan_mask = np.isnan(tt).any(axis=(-2, -1))
-    tt = tt[~nan_mask]
-
-    gs = np.stack(
-        [
-            mngs.linalg.geometric_median(
-                tt[..., v.mid_start : v.mid_end], axis=-1
-            )
-            for k, v in CONFIG.PHASES.items()
-        ],
-        axis=-1,
-    )
-
-    from itertools import combinations
-
-    from IPython import embed
-
-    embed()
-
-    count = 0
-    for ii, jj in combinations(np.arange(gs.shape[-1]), 2):  # 12 patterns
-        count += 1
-        print(count)
-        dist_between_gs = mngs.linalg.cdist(gs[..., ii], gs[..., jj])
-
-    # gs = load_gs()
-    __import__("ipdb").set_trace()
-
 
 if __name__ == "__main__":
     # Main
@@ -164,28 +134,3 @@ if __name__ == "__main__":
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
-
-
-#     # Distance between gs
-#     dist_between_gs_Hipp_all = np.hstack(
-#         [val for val in calc_dist_between_gs(traj_Hipp).values()]
-#     )
-#     dist_between_gs_EC_all = np.hstack(
-#         [val for val in calc_dist_between_gs(traj_EC).values()]
-#     )
-#     dist_between_gs_Amy_all = np.hstack(
-#         [val for val in calc_dist_between_gs(traj_Amy).values()]
-#     )
-#     df_dist_between_gs_all = mngs.gen.force_dataframe(
-#         {
-#             "Hipp.": dist_between_gs_Hipp_all,
-#             "EC": dist_between_gs_EC_all,
-#             "Amy.": dist_between_gs_Amy_all,
-#         }
-#     )
-#     # mngs.io.save(df_dist_between_gs_all, "./res/figs/box/MTL_regions/dist_between_gs_all.csv")
-#     # # mngs.io.save(df_dist_all, "./res/figs/box/MTL_regions/dist_from_O_all.csv")
-
-#     # mngs.io.save(pd.DataFrame(dist_between_gs_Hipp), "./res/figs/box/MTL_regions/dist_between_gs_Hipp.csv")
-#     # mngs.io.save(pd.DataFrame(dist_between_gs_EC), "./res/figs/box/MTL_regions/dist_between_gs_EC.csv")
-#     # mngs.io.save(pd.DataFrame(dist_between_gs_Amy), "./res/figs/box/MTL_regions/dist_between_gs_Amy.csv")

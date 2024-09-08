@@ -13,16 +13,26 @@
 ```bash
 ./scripts/load/all.sh
 ./scripts/demographic/all.sh
+./scripts/memory-load/all.sh
 ./scripts/ripple/all.sh
-./scripts/NT/all.sh
-./scripts/NT/visualization/custom_jointplot.py
+./scripts/GPFA/all.sh
+
+
+## NT
+./scripts/NT/znorm_NT.py
+
 ./scripts/NT/visualization/kde_8_factors.py
-./scripts/NT/visualization/umap_8_factors.py
-./scripts/NT/distance/geometrics_medians.py
+./scripts/NT/visualization/scatter_kde.py # good for set-size separations
+./scripts/NT/visualization/umap_8_factors.py # fxime; colors, supervised
+
+# Classification
 ./scripts/NT/clf/linearSVC.py
 
+# Distance
+./scripts/NT/distance/geometrics_medians.py
 ./scripts/NT/distance/dists_stats.py
-./scripts/NT/distance/
+./scripts/NT/distance/from_O_of_MTL_regions.py
+./scripts/NT/distance/between_gs_of_MTL_regions.py
 ```
 
 #### Figures

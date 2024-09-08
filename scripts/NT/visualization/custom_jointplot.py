@@ -1,76 +1,31 @@
 #!./env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-09 06:56:26 (ywatanabe)"
+# Time-stamp: "2024-09-09 08:30:26 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/custom_jointplot.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script does XYZ."""
 
 
-"""
-Imports
-"""
-import os
-import re
+"""Imports"""
+import importlib
 import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
-import seaborn as sns
-import importlib
-
 import mngs
-
-importlib.reload(mngs)
-
 import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from icecream import ic
-from natsort import natsorted
-from glob import glob
-from pprint import pprint
-import warnings
-import logging
-from tqdm import tqdm
-import xarray as xr
-from scipy.stats import gaussian_kde
-
+import seaborn as sns
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.stats import gaussian_kde, lognorm, skewnorm
 
 # sys.path = ["."] + sys.path
 # from scripts import utils, load
 
 """
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
-
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
-
-
-"""
 Functions & Classes
 """
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import seaborn as sns
-import pandas as pd
-import numpy as np
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import seaborn as sns
-import pandas as pd
-import numpy as np
-from scipy.stats import skewnorm, lognorm
 
 
 def generate_log_norm_skewed_biased_data(size, skewness, bias, mean, sigma):
@@ -216,17 +171,8 @@ def main():
     # Create the custom plot
     custom_joint_plot(data, nrows=2, ncols=4)
 
-    pass
-
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
     # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False, agg=True

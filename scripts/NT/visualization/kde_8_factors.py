@@ -1,68 +1,30 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-11 22:38:37 (ywatanabe)"
+# Time-stamp: "2024-09-09 08:36:08 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script does XYZ."""
 
 
-"""
-Imports
-"""
+"""Imports"""
+import logging
 import sys
+from itertools import product
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import mngs
 import numpy as np
 import pandas as pd
+import seaborn as sns
+import utils
 from scipy.stats import gaussian_kde
 
-import utils
-from itertools import product
-import logging
-
-"""
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
-
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
-
-
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def gen_query(phase, match, set_size):
     return f"{phase}_{match}_{set_size}"
-
-    # # Plotting
-    # data_list = []
-    # n_phases = len(CONFIG.PHASES)
-    # n_matches = len(CONFIG.MATCHES)
-    # for i_match in range(n_matches):
-    #     for i_phase in range(n_phases):
-
-    #         phase = list(CONFIG.PHASES.keys())[i_phase]
-    #         match = list(CONFIG.MATCHES)[i_match]
-
-    #         queries = [
-    #             f"{phase}_{match}_4",
-    #             f"{phase}_{match}_6",
-    #             f"{phase}_{match}_8",
-    #         ]
-
-    #         data = [df[df["phase_match_set_size"] == qq] for qq in queries]
-    #         data_list.append(data)
 
 
 def NT2df(NT, trials_info):
@@ -160,9 +122,7 @@ def define_color(phase, set_size):
 
 
 def kde_plot_8_factors(data, sample_type):
-    # n_phases = len(CONFIG.PHASES)
     n_matches = len(CONFIG.MATCHES)
-    # n_set_sizes = len(CONFIG.SET_SIZES)
     n_factors = len(mngs.gen.search("factor_", data.columns)[1])
 
     # # Calc lims of marginal axes
@@ -312,13 +272,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
     # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
