@@ -301,7 +301,7 @@ def main():
     for i_ca1, ca1 in enumerate(CONFIG.ROI.CA1):
 
         lpath_NT = mngs.gen.replace(CONFIG.PATH.NT_Z, ca1)
-        lpath_GS = mngs.gen.replace(CONFIG.PATH.NT_GS, ca1)
+        lpath_GS = mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1)
         lpath_TI = mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
         spath_base = eval(lpath_NT.replace(".npy", "/"))
 

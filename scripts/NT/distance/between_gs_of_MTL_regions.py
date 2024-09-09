@@ -36,7 +36,6 @@ def calc_dist_between_gs(traj_MTL_region):
 
     gs = np.stack(
         [
-            # np.median(
             mngs.linalg.geometric_median(
                 traj_MTL_region[..., v.mid_start : v.mid_end], axis=-1
             )
@@ -82,6 +81,35 @@ def main():
     )
 
 
+def load_gs():
+    LPATHS = mngs.io.glob(CONFIG.PATH.NT_GS_TRIAL)
+    LPATHS = mngs.gen.search(["Session_01", "Session_02"], LPATHS)[1]
+    gs = {}
+    for mtl in CONFIG.ROI.MTL.keys():
+        lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
+        # gs[mtl] = np.vstack([mngs.io.load(lpath) for lpath in lpaths_mtl])
+        gs[mtl] = pd.concat([mngs.io.load(lpath) for lpath in lpaths_mtl])
+    return gs
+
+
+def main2():
+    gs = load_gs()
+    pd.concat(gs).reset_index()
+    gs.groupby(["factor"])()
+    __import__("ipdb").set_trace()
+
+    # dist = {k: calc_dist_between_gs(v) for k, v in traj.items()}
+    # dist = mngs.pd.force_df(dist).melt()
+    # dist = dist.rename(columns={"variable": "MTL", "value": "distance"})
+
+    # fig = plot_box(dist)
+    # mngs.io.save(
+    #     fig,
+    #     "./data/NT/distance/between_gs_of_MTL_regions_box.jpg",
+    #     from_cwd=True,
+    # )
+
+
 if __name__ == "__main__":
     # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
@@ -91,4 +119,5 @@ if __name__ == "__main__":
         agg=True,
     )
     main()
+    main2()
     mngs.gen.close(CONFIG, verbose=False, notify=False)

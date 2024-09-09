@@ -304,7 +304,7 @@ def format_gs(GS):
 
 def process_ca1(ca1):
     NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
-    GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS, ca1))
+    GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
     trials_info = mngs.io.load(mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1))
     metrics, conf_mats = main_NT(NT, trials_info, GS)
 
@@ -328,7 +328,7 @@ def main():
     # conf_mats_all = []
     # for ca1 in tqdm(CONFIG.ROI.CA1):
     #     NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
-    #     GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS, ca1))
+    #     GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
     #     trials_info = mngs.io.load(
     #         mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
     #     )

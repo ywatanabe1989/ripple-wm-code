@@ -318,7 +318,7 @@ def main():
     conf_mats_all = []
     for ca1 in tqdm(CONFIG.ROI.CA1):
         NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
-        GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS, ca1))
+        GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
         trials_info = mngs.io.load(
             mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
         )

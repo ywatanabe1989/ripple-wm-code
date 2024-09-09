@@ -30,9 +30,15 @@ PATH:
   NT_Z:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session.npy"
 
-  NT_GS:
-    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs.csv"
+  # NT_GS:
+  #   f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs.csv"
 
+  NT_GS_TRIAL:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_trial.csv"
+    
+  NT_GS_SESSION:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_session.csv"
+    
   NT_DIST_FROM_G:
     "./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/from_g.csv"
 

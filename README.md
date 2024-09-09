@@ -13,7 +13,6 @@
 ```bash
 ./scripts/load/all.sh
 ./scripts/demographic/all.sh
-./scripts/memory-load/all.sh
 ./scripts/ripple/all.sh
 ./scripts/GPFA/all.sh
 
@@ -30,9 +29,14 @@
 
 # Distance
 ./scripts/NT/distance/geometrics_medians.py
-./scripts/NT/distance/dists_stats.py
+./scripts/NT/distance/calc_dists.py # between gs
+./scripts/NT/distance/dists_stats.py # between gs
 ./scripts/NT/distance/from_O_of_MTL_regions.py
 ./scripts/NT/distance/between_gs_of_MTL_regions.py
+
+# Memory-load Dependancies
+./scripts/memory-load/all.sh
+./scripts/memory-load/distance_between_gs.py
 ```
 
 #### Figures

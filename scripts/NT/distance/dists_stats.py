@@ -8,64 +8,25 @@
 This script does XYZ.
 """
 
-"""
-Imports
-"""
-import importlib
-import logging
-import os
-import re
+"""Imports"""
 import sys
-import warnings
-from glob import glob
-from pprint import pprint
+from itertools import combinations
 
 import matplotlib
 import matplotlib.pyplot as plt
 import mngs
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 import seaborn as sns
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
-from scipy.stats import gaussian_kde, rankdata
-from tqdm import tqdm
+from scipy.stats import gaussian_kde
 
-# import joypy
+"""Warnings"""
 mngs.pd.ignore_SettingWithCopyWarning()
-# sys.path = ["."] + sys.path
-# from scripts import utils, load
-
-"""
-Warnings
-"""
 # warnings.simplefilter("ignore", UserWarning)
 
 
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
-
-
-"""
-Functions & Classes
-"""
-
-
-from itertools import combinations
-
-import matplotlib.pyplot as plt
-import pandas as pd
-import scipy.stats as stats
-import seaborn as sns
-from scipy import stats
-from statsmodels.stats.multicomp import pairwise_tukeyhsd
-
+"""Functions & Classes"""
 PHASES_TO_PLOT = ["Encoding", "Retrieval"]
 
 
@@ -135,17 +96,6 @@ def plot_p_values(pivot):
         yticks=pivot.index,
     )
     return fig
-
-
-# def define_color(col):
-#     if "g_E-NT_E" in col:
-#         return "blue"
-#     elif "g_E-NT_R" in col:
-#         return "light_blue"
-#     elif "g_R-NT_E" in col:
-#         return "pink"
-#     elif "g_R-NT_R" in col:
-#         return "red"
 
 
 def rename_phases(df):
@@ -302,14 +252,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
         plt,
