@@ -7,6 +7,7 @@
 
 
 """Imports"""
+import itertools
 import sys
 from itertools import combinations
 
@@ -15,70 +16,13 @@ import matplotlib.pyplot as plt
 import mngs
 import numpy as np
 import pandas as pd
+import xarray as xr
 from scipy.linalg import norm
-
-sys.path = ["."] + sys.path
-try:
-    from scripts import utils
-except Exception as e:
-    pass
-from scripts.NT.distance.from_O_of_MTL_regions import load_trajs
 
 """Config"""
 CONFIG = mngs.gen.load_configs()
 
 """Functions & Classes"""
-
-
-def calc_dist_between_gs(traj_MTL_region):
-    nan_mask = np.isnan(traj_MTL_region).any(axis=(-2, -1))
-    traj_MTL_region = traj_MTL_region[~nan_mask]
-
-    gs = np.stack(
-        [
-            mngs.linalg.geometric_median(
-                traj_MTL_region[..., v.mid_start : v.mid_end], axis=-1
-            )
-            for k, v in CONFIG.PHASES.items()
-        ],
-        axis=-1,
-    )
-
-    dist_between_gs = []
-    for ii, jj in combinations(np.arange(gs.shape[-1]), 2):  # 6 patterns
-        v1 = gs[..., ii]
-        v2 = gs[..., jj]
-        _dist_between_gs = norm(v1 - v2, axis=-1)
-        dist_between_gs.append(_dist_between_gs)
-    return np.hstack(dist_between_gs)
-
-
-def plot_box(dist):
-    fig, ax = mngs.plt.subplots()
-    ax.sns_boxplot(
-        data=dist,
-        x="MTL",
-        y="distance",
-        showfliers=False,
-        order=["HIP", "EC", "AMY"],
-    )
-    ax.set_yscale("log")
-    return fig
-
-
-def main():
-    traj = load_trajs()
-
-    dist = {k: calc_dist_between_gs(v) for k, v in traj.items()}
-    dist = mngs.pd.force_df(dist).melt()
-    dist = dist.rename(columns={"variable": "MTL", "value": "distance"})
-
-    fig = plot_box(dist)
-    mngs.io.save(
-        fig,
-        "./data/NT/distance/between_gs_of_MTL_regions_box.jpg",
-        from_cwd=True,
-    )
 
 
 def load_gs():
@@ -87,31 +31,84 @@ def load_gs():
     gs = {}
     for mtl in CONFIG.ROI.MTL.keys():
         lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
-        # gs[mtl] = np.vstack([mngs.io.load(lpath) for lpath in lpaths_mtl])
-        gs[mtl] = pd.concat([mngs.io.load(lpath) for lpath in lpaths_mtl])
+        print(len(lpaths_mtl))
+        das = [mngs.io.load(lpath) for lpath in lpaths_mtl]
+        gs[mtl] = xr.concat(das, dim="session", coords="minimal")
     return gs
 
 
-def main2():
+def calc_distances_between_gs(gs_mtl):
+    phases = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+    phase_combinations = list(itertools.combinations(phases, 2))
+
+    distances = []
+    for phase1, phase2 in phase_combinations:
+
+        v1 = np.array(gs_mtl.sel(phase=phase1))
+        v2 = np.array(gs_mtl.sel(phase=phase2))
+
+        v1 = v1.reshape(-1, v1.shape[-1])
+        v2 = v2.reshape(-1, v2.shape[-1])
+
+        mask = ~(np.isnan(v1).any(axis=-1) + np.isnan(v2).any(axis=-1))
+
+        distance = norm(v1[mask] - v2[mask], axis=-1)
+
+        distances.append(distance)
+
+    return np.hstack(distances)
+
+
+# def plot_box(dist):
+#     fig, ax = mngs.plt.subplots()
+#     dist = dist[~dist.isna().any(axis=1)]
+#     ax.sns_boxplot(
+#         data=dist,
+#         x="MTL",
+#         y="distance",
+#         showfliers=False,
+#         order=["HIP", "EC", "AMY"],
+#     )
+#     ax.set_yscale("log")
+#     return fig
+
+
+def plot_box(dist):
+    fig, ax = mngs.plt.subplots()
+    dist = dist[~dist.isna().any(axis=1)]
+
+    labels = ["HIP", "EC", "AMY"]
+    data = [dist[dist.MTL == ll].distance for ll in labels]
+    print([len(dd) for dd in data])  # [7338, 5016, 6198]
+
+    ax.boxplot(
+        data,
+        labels=labels,
+        showfliers=False,
+    )
+    ax.set_yscale("log")
+    return fig
+
+
+def main():
     gs = load_gs()
-    pd.concat(gs).reset_index()
-    gs.groupby(["factor"])()
-    __import__("ipdb").set_trace()
-
-    # dist = {k: calc_dist_between_gs(v) for k, v in traj.items()}
-    # dist = mngs.pd.force_df(dist).melt()
-    # dist = dist.rename(columns={"variable": "MTL", "value": "distance"})
-
-    # fig = plot_box(dist)
-    # mngs.io.save(
-    #     fig,
-    #     "./data/NT/distance/between_gs_of_MTL_regions_box.jpg",
-    #     from_cwd=True,
-    # )
+    dists = {k: calc_distances_between_gs(gs_mtl) for k, gs_mtl in gs.items()}
+    dists = {k: np.hstack(v) for k, v in dists.items()}
+    dists = (
+        mngs.pd.force_df(dists)
+        .melt()
+        .rename(columns={"variable": "MTL", "value": "distance"})
+    )
+    dists = dists[~dists.isna().any(axis=1)]
+    fig = plot_box(dists)
+    mngs.io.save(
+        fig,
+        "./data/NT/distance/between_gs_of_MTL_regions_box.jpg",
+        from_cwd=True,
+    )
 
 
 if __name__ == "__main__":
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
         plt,
@@ -119,5 +116,7 @@ if __name__ == "__main__":
         agg=True,
     )
     main()
-    main2()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
+
+# /tmp/fake-ywatanabe/data/NT/distance/between_gs_of_MTL_regions_box.jpg
+# /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs_of_MTL_regions/data/NT/distance/between_gs_of_MTL_regions_box.jpg

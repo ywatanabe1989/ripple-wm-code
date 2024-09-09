@@ -16,12 +16,6 @@ import numpy as np
 import pandas as pd
 from scipy.linalg import norm
 
-sys.path = ["."] + sys.path
-try:
-    from scripts import utils
-except Exception as e:
-    pass
-
 """Config"""
 CONFIG = mngs.gen.load_configs()
 

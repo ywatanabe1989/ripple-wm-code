@@ -56,12 +56,15 @@ def main():
             .to_array()
             .rename(
                 {
-                    "variable": "coordinate",
+                    "variable": "factor",
                     "level_0": "phase",
-                    "level_1": "factor",
+                    "level_1": "trial",
                 }
             )
         )
+        gs_trial["factor"] = [f[0] for f in gs_trial["factor"].values]
+        gs_trial = gs_trial.transpose("trial", "factor", "phase")
+
         mngs.io.save(
             gs_trial,
             lpath_NT.replace(".npy", "/gs_trial.pkl"),
