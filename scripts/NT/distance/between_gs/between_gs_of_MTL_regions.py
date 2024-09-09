@@ -31,9 +31,9 @@ def load_gs():
     gs = {}
     for mtl in CONFIG.ROI.MTL.keys():
         lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
-        print(len(lpaths_mtl))
         das = [mngs.io.load(lpath) for lpath in lpaths_mtl]
         gs[mtl] = xr.concat(das, dim="session", coords="minimal")
+        print(f"n_lpaths_mtl: {mtl, len(lpaths_mtl)}")
     return gs
 
 
@@ -92,6 +92,16 @@ def plot_box(dist):
 
 def main():
     gs = load_gs()
+
+    ################################################################################
+    # checking
+    ################################################################################
+    gs_HIP = np.array(gs["HIP"])
+    gs_HIP_F = gs_HIP[..., -1]
+    gs_HIP_F = gs_HIP_F.reshape(-1, gs_HIP_F.shape[-1])
+    gs_HIP_F = gs_HIP_F[~np.isnan(gs_HIP_F).any(axis=-1)]
+    ################################################################################
+
     dists = {k: calc_distances_between_gs(gs_mtl) for k, gs_mtl in gs.items()}
     dists = {k: np.hstack(v) for k, v in dists.items()}
     dists = (
@@ -100,6 +110,12 @@ def main():
         .rename(columns={"variable": "MTL", "value": "distance"})
     )
     dists = dists[~dists.isna().any(axis=1)]
+
+    # dist_HIP = dists[dists.MTL == "HIP"].distance
+    # Name: distance, Length: 7338, dtype: float64
+    # ipdb> dist_HIP.sum()
+    # 9155.965228857116
+
     fig = plot_box(dists)
     mngs.io.save(
         fig,

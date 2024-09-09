@@ -61,7 +61,6 @@
 
 
 
-
 #### Wavelet transformation
 
 ``` bash

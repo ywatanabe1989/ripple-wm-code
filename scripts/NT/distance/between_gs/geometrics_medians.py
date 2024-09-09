@@ -18,6 +18,36 @@ import xarray as xr
 
 """Functions & Classes"""
 
+import numpy as np
+import torch
+from scipy.optimize import minimize
+
+
+def geometric_median(X, eps=1e-5):
+    y = torch.mean(X, dim=0)
+
+    while True:
+        D = torch.sqrt(torch.sum((X - y) ** 2, dim=1))
+        nonzeros = D != 0
+        y_new = (X[nonzeros] / D[nonzeros][:, None]).sum(
+            dim=0
+        ) / nonzeros.sum()
+        if torch.norm(y - y_new) < eps:
+            return y_new
+        y = y_new
+
+
+# def geometric_median(X, eps=1e-5):
+#     y = np.mean(X, 0)
+
+#     while True:
+#         D = np.sqrt(((X - y)**2).sum(axis=1))
+#         nonzeros = (D != 0)
+#         y_new = (X[nonzeros]/D[nonzeros][:, None]).sum(axis=0) / nonzeros.sum()
+#         if np.linalg.norm(y - y_new) < eps:
+#             return y_new
+#         y = y_new
+
 
 def main():
     LPATHS_NT = mngs.gen.glob(CONFIG.PATH.NT_Z)
@@ -39,7 +69,9 @@ def main():
             gs_trial[phase] = pd.DataFrame(
                 np.vstack(
                     [
-                        mngs.linalg.geometric_median(NT_phase[:, i_trial, :])
+                        mngs.linalg.geometric_median(
+                            NT_phase[:, i_trial, :], axis=-1
+                        )
                         for i_trial in range(n_trials)
                     ]
                 ),
@@ -48,7 +80,9 @@ def main():
 
             # Session
             NT_phase_flatten = NT_phase.reshape(len(NT_phase), -1)
-            gs_session[phase] = mngs.linalg.geometric_median(NT_phase_flatten)
+            gs_session[phase] = mngs.linalg.geometric_median(
+                NT_phase_flatten, axis=-1
+            )
 
         # Trial
         gs_trial = (

@@ -77,7 +77,7 @@ def calc_dists(NT, GS, TI, ca1):
     dist_df = pd.concat(dist_df)
 
     mngs.pd.merge_cols(dist_df, "phase_g", "phase_nt")
-    dist_df = dist_df.rename(columns={"phase_g_phase_nt": "group"})
+    dist_df = dist_df.rename(columns={"merged": "group"})
     dist_df["group"] = dist_df["group"].apply(replace_group)
 
     for k, v in ca1.items():
