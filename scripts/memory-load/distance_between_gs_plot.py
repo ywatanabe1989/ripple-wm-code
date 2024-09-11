@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-10 14:13:48 (ywatanabe)"
+# Time-stamp: "2024-09-12 02:09:49 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs.py
 
 """This script calculates and analyzes distances between phase states."""
@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import mngs
 import numpy as np
 import pandas as pd
-from scipy import stats
 from scipy.spatial.distance import norm
 
 sys.path = ["."] + sys.path

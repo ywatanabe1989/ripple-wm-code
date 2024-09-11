@@ -36,7 +36,9 @@
 
 # Memory-load Dependancies
 ./scripts/memory-load/all.sh
-./scripts/memory-load/distance_between_gs.py
+./scripts/memory-load/distance_between_gs_plot.py
+./scripts/memory-load/distance_between_gs_stats.py
+
 ```
 
 #### Figures

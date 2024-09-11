@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-10 11:45:39 (ywatanabe)"
+# Time-stamp: "2024-09-12 02:15:45 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs.py
 
 """This script calculates and analyzes distances between phase states."""
@@ -124,6 +124,23 @@ def analyze_mtl_region(mtl_region, use_log, config):
 
 
 def main():
+
+    # import os
+    # from pathlib import Path
+
+    # print(os.getcwd())
+    # print(__file__)
+
+    # current_dir = Path(os.getcwd())
+    # file_path = Path(__file__)
+    # diff = file_path.resolve().relative_to(current_dir)
+
+    # print(f"Relative path: {diff}")
+
+    # /mnt/ssd/ripple-wm-code
+    # /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats.py
+    # Relative path: scripts/memory-load/distance_between_gs_stats.py
+
     mtl_regions = CONFIG.ROI.MTL.keys()
     all_results = []
 
@@ -252,7 +269,18 @@ def main():
         plt.tight_layout()
         mngs.io.save(fig, f"summary_plot_{'log' if use_log else 'linear'}.jpg")
 
+        # Saved to: /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats/summary_plot_linear.csv (792.0 B)
+
+        # Saved to: /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats/summary_plot_linear.jpg (615.5 KiB)
+
+        # Saved to: /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats/summary_plot_log.csv (786.0 B)
+
+        # Saved to: /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats/summary_plot_log.jpg (617.7 KiB)
+
     mngs.io.save(pd.DataFrame(all_results), "summary_stats.csv")
+    # Saved to: /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats/summary_plot_log.jpg (617.7 KiB)
+
+    # Saved to: /mnt/ssd/ripple-wm-code/scripts/memory-load/distance_between_gs_stats/summary_stats.csv (3.5 KiB)
 
 
 if __name__ == "__main__":
