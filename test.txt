@@ -1,1 +1,0 @@
-scripts/NT/clf/linearSVC/test.txt
