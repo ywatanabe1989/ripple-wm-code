@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-12 08:20:02 (ywatanabe)"
+# Time-stamp: "2024-09-12 21:53:59 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/check_SWR.py
 
 
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import mngs
 import pandas as pd
 import xarray as xr
-from scripts.utils import parse_lpath
+from scripts.utils import load_ripples, parse_lpath
 
 """Config"""
 CONFIG = mngs.gen.load_configs()
@@ -23,22 +23,6 @@ CONFIG = mngs.gen.load_configs()
 """
 Functions & Classes
 """
-
-
-def _load():
-    pp = []
-    mm = []
-    for ca1 in CONFIG.ROI.CA1:
-        lpath_p = mngs.gen.replace(CONFIG.PATH.RIPPLE, ca1)
-        lpath_m = mngs.gen.replace(CONFIG.PATH.RIPPLE_MINUS, ca1)
-
-        pp.append(mngs.io.load(lpath_p))
-        mm.append(mngs.io.load(lpath_m))
-
-    pp = pd.concat(pp)
-    mm = pd.concat(mm)
-
-    return pp, mm
 
 
 def plot_duration(pp, mm):
@@ -62,7 +46,7 @@ def plot_amplitude(pp, mm):
 
 def main():
     # Loading
-    pp, mm = _load()
+    pp, mm = load_ripples()
 
     # Duration
     fig = plot_duration(pp, mm)

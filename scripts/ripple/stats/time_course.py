@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-12 10:01:11 (ywatanabe)"
+# Time-stamp: "2024-09-12 21:54:38 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/stats/time_course.py
 
 """This script does XYZ."""
@@ -14,7 +14,8 @@ import sys
 import matplotlib.pyplot as plt
 import mngs
 import numpy as np
-from scripts.ripple.stats.duration_amplitude import _load
+# from scripts.ripple.stats.duration_amplitude import _load_ripples
+from scripts.utils import load_ripples
 
 """Config"""
 # CONFIG = mngs.gen.load_configs()
@@ -27,7 +28,7 @@ from scripts.ripple.stats.duration_amplitude import _load
 
 
 def main():
-    pp, mm = _load()
+    pp, mm = load_ripples()
     tt = np.linspace(
         0,
         CONFIG.TRIAL.DUR_SEC,
