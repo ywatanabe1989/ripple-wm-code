@@ -1,17 +1,13 @@
-#!./env/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-10 01:17:11 (ywatanabe)"
-# /mnt/ssd/ripple-wm-code/scripts/ripple/define_putative_CA1_using_UMAP.py
+# Time-stamp: "2024-09-12 05:01:00 (ywatanabe)"
+# ./scripts/ripple/detect_and_define/define_putative_CA1_using_UMAP.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script defines putative CA1 regions using supervised UMAP on underlying unit activity."""
 
 
-"""
-Imports
-"""
+"""Imports"""
 import sys
 
 import matplotlib.pyplot as plt
@@ -22,21 +18,17 @@ from scripts.utils import parse_lpath
 from sklearn.metrics import silhouette_score
 from tqdm import tqdm
 
-"""
-Config
-"""
+"""Config"""
 CONFIG = mngs.gen.load_configs()
 
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def calc_silhouette_scores():
     for region in tqdm(CONFIG.ROI.MTL.keys()):
         out = mngs.gen.listed_dict()
-        for lpath_ripple_p in tqdm(mngs.gen.natglob(CONFIG.PATH.RIPPLE)):
+        for lpath_ripple_p in tqdm(mngs.gen.glob(CONFIG.PATH.RIPPLE)):
             parsed = parse_lpath(lpath_ripple_p)
 
             if not parsed["roi"] in CONFIG.ROI.MTL[region]:
@@ -163,7 +155,6 @@ def determine_putative_CA1():
         df = mngs.io.load(f"./data/silhouette_scores/{region}/raw.csv").drop(
             columns=["lpath_ripple"]
         )
-        __import__("ipdb").set_trace()
 
         # Calculation of count, mean, and standard deviation for 'silhouette_score' across sessions
         df = (
@@ -194,14 +185,6 @@ def determine_putative_CA1():
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False, agg=True
     )

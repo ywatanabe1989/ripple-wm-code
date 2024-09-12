@@ -1,19 +1,14 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-10 00:14:49 (ywatanabe)"
-# ./scripts/ripple/detect_SWR_p.py
+# Time-stamp: "2024-09-12 04:47:57 (ywatanabe)"
+# ./scripts/ripple/detect_and_define/detect_SWR_p.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script detects SWR candidates."""
 
 
-"""
-Imports
-"""
+"""Imports"""
 import sys
-from bisect import bisect_left
 from functools import partial
 
 import matplotlib.pyplot as plt
@@ -27,15 +22,11 @@ pd.set_option("future.no_silent_downcasting", True)
 # from scripts.load import load_iEEG
 from scripts.utils import parse_lpath
 
-"""
-Config
-"""
+"""Config"""
 CONFIG = mngs.gen.load_configs()
 
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def transfer_metadata(df, trials_info):
@@ -95,10 +86,6 @@ def add_firing_patterns(df):
 
 
 def main_lpath(lpath_iEEG):
-
-    # LPATHS_iEEG = mngs.gen.natglob(CONFIG["PATH_iEEG"])
-    # lpath = LPATHS_iEEG[0]
-
     # Parsing variables from lpath
     parsed = parse_lpath(lpath_iEEG)
     sub = parsed["sub"]
@@ -110,10 +97,10 @@ def main_lpath(lpath_iEEG):
 
     # Skipping ripple data for no channels data
     if xx.shape[1] == 0:
-        fake_df = pd.DataFrame(
-            columns=["start_s", "end_s"],
-            data=np.array([[np.nan, np.nan]]),
-        )
+        # fake_df = pd.DataFrame(
+        #     columns=["start_s", "end_s"],
+        #     data=np.array([[np.nan, np.nan]]),
+        # )
         return
 
     # Main
@@ -144,36 +131,20 @@ def main_lpath(lpath_iEEG):
     df = add_firing_patterns(df)
 
     # Saving
-    # Ripple
-    spath_ripple = eval(CONFIG.PATH.RIPPLE)
-    mngs.io.save(df, spath_ripple, from_cwd=True, dry_run=False)
-    # Ripple-band iEEG data
-    spath_ripple_band_iEEG = eval(CONFIG.PATH.iEEG).replace(
-        "iEEG", "iEEG_ripple_preprocessed"
-    )
+    mngs.io.save(df, eval(CONFIG.PATH.RIPPLE))
     mngs.io.save(
         (xx_r, fs_r),
-        spath_ripple_band_iEEG,
-        from_cwd=True,
-        dry_run=False,
+        eval(CONFIG.PATH.iEEG_RIPPLE_BAND),
     )
 
 
 def main():
-    LPATHS_iEEG = mngs.gen.natglob(CONFIG.PATH.iEEG)
+    LPATHS_iEEG = mngs.gen.glob(CONFIG.PATH.iEEG)
     for lpath_iEEG in LPATHS_iEEG:
         main_lpath(lpath_iEEG)
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False
     )

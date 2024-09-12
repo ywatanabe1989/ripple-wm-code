@@ -16,8 +16,10 @@ main() {
     echo -e "$0 starts."
 
     # Main
-    ./scripts/memory-load/correct_rate.py
-    ./scripts/memory-load/response_time.py    
+    ./scripts/memory_load/correct_rate.py
+    ./scripts/memory_load/response_time.py
+    ./scripts/memory_load/distance_between_gs_plot.py
+    ./scripts/memory_load/distance_between_gs_stats.py
 
     # Closing
     echo -e "$0 ends"

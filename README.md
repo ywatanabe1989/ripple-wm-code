@@ -14,30 +14,10 @@
 ./scripts/load/all.sh
 ./scripts/demographic/all.sh
 ./scripts/ripple/all.sh
+./scripts/ripple/check_duration_amplitude.py
 ./scripts/GPFA/all.sh
-
-
-## NT
-./scripts/NT/znorm_NT.py
-
-./scripts/NT/visualization/kde_8_factors.py
-./scripts/NT/visualization/scatter_kde.py # good for set-size separations
-./scripts/NT/visualization/umap_8_factors.py # fxime; colors, supervised
-
-# Classification
-./scripts/NT/clf/linearSVC.py
-
-# Distance
-./scripts/NT/distance/from_O/MTL_regions.py
-./scripts/NT/distance/between_gs/geometrics_medians.py
-./scripts/NT/distance/between_gs/calc_dists.py
-./scripts/NT/distance/between_gs/dists_stats.py
-./scripts/NT/distance/between_gs/MTL_regions.py
-
-# Memory-load Dependancies
-./scripts/memory-load/all.sh
-./scripts/memory-load/distance_between_gs_plot.py
-./scripts/memory-load/distance_between_gs_stats.py
+./scripts/NT/all.sh
+./scripts/memory_load/all.sh
 
 ```
 

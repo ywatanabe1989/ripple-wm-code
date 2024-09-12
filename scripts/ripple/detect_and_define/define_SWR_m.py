@@ -1,63 +1,31 @@
-#!./env/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-07-10 12:16:20 (ywatanabe)"
-# /mnt/ssd/ripple-wm-code/scripts/ripple/define_SWR-.py
+# Time-stamp: "2024-09-12 04:49:40 (ywatanabe)"
+# ./scripts/ripple/detect_and_define/define_SWR_m.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script defines SWR- as control events for SWR+."""
 
 
-"""
-Imports
-"""
-import os
-import re
+"""Imports"""
+import random
 import sys
+from functools import partial
 
 import matplotlib
 import matplotlib.pyplot as plt
 import mngs
-import seaborn as sns
-
-mngs.gen.reload(mngs)
-import random
-import warnings
-from functools import partial
-from glob import glob
-from pprint import pprint
-
 import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
-from scripts.ripple.detect_SWR_p import add_firing_patterns, transfer_metadata
+from scripts.ripple.detect_and_define.detect_SWR_p import (add_firing_patterns,
+                                                           transfer_metadata)
 from scripts.utils import parse_lpath
-from tqdm import tqdm
 
-# sys.path = ["."] + sys.path
-# from scripts import utils, load
-
-"""
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
-
-"""
-Config
-"""
+"""Config"""
 CONFIG = mngs.gen.load_configs()
 
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def add_peak_s(row, xxr, fs_r):
@@ -163,18 +131,10 @@ def main_lpath(lpath_ripple, lpath_iEEG):
 
     # Saving
     spath = lpath_ripple.replace("SWR_p", "SWR_m")
-    mngs.io.save(df_m, spath, from_cwd=True)
+    mngs.io.save(df_m, spath)
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False, random=random, np=np
     )
