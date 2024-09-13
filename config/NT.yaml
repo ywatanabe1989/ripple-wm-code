@@ -1,0 +1,5 @@
+NT:
+  N_BINS:
+    'int(CONFIG.TRIAL.DUR_SEC / (CONFIG.GPFA.BIN_SIZE_MS * 1e-3))'
+  TIME_AXIS:
+    'np.linspace(0, CONFIG.TRIAL.DUR_SEC, eval(CONFIG.NT.N_BINS))'

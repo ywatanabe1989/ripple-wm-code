@@ -3,6 +3,8 @@ FS:
     2000
   EEG:
     200
+  NT:
+    '(CONFIG.GPFA.BIN_SIZE_MS * 1e-3)'
 
 # FS_iEEG:
 #   2000

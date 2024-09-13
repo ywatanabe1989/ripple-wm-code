@@ -14,9 +14,7 @@
 ./scripts/load/all.sh
 ./scripts/demographic/all.sh
 ./scripts/ripple/all.sh
-./scripts/ripple/stats/duration_amplitude.py
-./scripts/ripple/stats/time_course.py
-./scripts/ripple/stats/time_course.py
+./scripts/ripple/NT/distance_from_O.py
 ./scripts/GPFA/all.sh
 ./scripts/NT/all.sh
 ./scripts/memory_load/all.sh

@@ -21,9 +21,15 @@ PATH:
   RIPPLE:
     f"./data/Sub_{sub}/Session_{session}/SWR_p/{roi}.pkl"
 
+  RIPPLE_WITH_NT:
+    f"./data/Sub_{sub}/Session_{session}/SWR_p/{roi}_with_NT.pkl"
+    
   RIPPLE_MINUS:
     f"./data/Sub_{sub}/Session_{session}/SWR_m/{roi}.pkl"
 
+  RIPPLE_MINUS_WITH_NT:
+    f"./data/Sub_{sub}/Session_{session}/SWR_m/{roi}_with_NT.pkl"
+    
   NT:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all.npy"
 

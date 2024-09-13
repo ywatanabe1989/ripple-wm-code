@@ -24,6 +24,9 @@ main() {
         "./scripts/ripple/detect_and_define/define_SWR_m.py"
         "./scripts/ripple/detect_and_define/define_putative_CA1_using_UMAP.py"
         "./scripts/ripple/plot_SWR_p.py"
+        "./scripts/ripple/stats/duration_amplitude.py"
+        "./scripts/ripple/stats/time_course.py"
+        "./scripts/ripple/NT/adds_NT.py"
         # "./scripts/ripple/check_SWR.py"
     )
 
