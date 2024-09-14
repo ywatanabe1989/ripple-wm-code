@@ -14,7 +14,7 @@
 ./scripts/load/all.sh
 ./scripts/demographic/all.sh
 ./scripts/ripple/all.sh
-./scripts/ripple/NT/distance_from_O.py
+
 ./scripts/GPFA/all.sh
 ./scripts/NT/all.sh
 ./scripts/memory_load/all.sh
