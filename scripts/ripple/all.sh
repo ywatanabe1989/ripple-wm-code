@@ -29,6 +29,7 @@ main() {
         "./scripts/ripple/NT/add_NT.py"
         "./scripts/ripple/NT/distance/from_O_lineplot.py"        
         "./scripts/ripple/NT/distance/from_O_boxplot.py"
+        "./scripts/ripple/NT/distance/stats.py"        
         # "./scripts/ripple/check_SWR.py"
     )
 
