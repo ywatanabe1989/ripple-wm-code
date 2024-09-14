@@ -2,8 +2,7 @@
 # Script created on: 2024-07-06 04:37:42
 # Script path: ./scripts/ripple/all.sh
 
-LOG_PATH_STDOUT="${0%.sh}.log"
-LOG_PATH_STDERR="${0%.sh}.err"
+LOG_PATH="${0%.sh}.log"
 
 usage() {
     echo "Usage: $0 [-h|--help]"
@@ -27,7 +26,8 @@ main() {
         "./scripts/ripple/stats/duration_amplitude.py"
         "./scripts/ripple/stats/time_course.py"
         "./scripts/ripple/NT/add_NT.py"
-        "./scripts/ripple/NT/distance/from_O.py"
+        "./scripts/ripple/NT/distance/from_O_lineplot.py"        
+        "./scripts/ripple/NT/distance/from_O_boxplot.py"
         # "./scripts/ripple/check_SWR.py"
     )
 
@@ -35,11 +35,7 @@ main() {
         echo -e "\n--------------------------------------------------------------------------------"
         echo "$script starts"
         echo -e "--------------------------------------------------------------------------------\n"
-        if python "$script" 2>> "$LOG_PATH_STDERR" | tee -a "$LOG_PATH_STDOUT"; then
-            echo "$script completed successfully" | tee -a "$LOG_PATH_STDOUT"
-        else
-            echo "Error: $script failed with exit code $?" | tee -a "$LOG_PATH_STDOUT" "$LOG_PATH_STDERR"
-        fi
+        python "$script" 2>&1 | tee -a "$LOG_PATH"
     done
 
     echo "$0 ends"
@@ -58,9 +54,9 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-rm -f "$LOG_PATH_STDOUT" "$LOG_PATH_STDERR"
-touch "$LOG_PATH_STDOUT" "$LOG_PATH_STDERR" || { echo "Error: Unable to create log files" >&2; exit 1; }
-main 2>&1 | tee -a "$LOG_PATH_STDOUT"
-echo -e "\nLogged to: $LOG_PATH_STDOUT (stdout and stderr) and $LOG_PATH_STDERR (errors only)"
+rm -f "$LOG_PATH"
+touch "$LOG_PATH"
+main 2>&1 | tee -a "$LOG_PATH"
+echo -e "\nLogged to: $LOG_PATH"
 
 # EOF

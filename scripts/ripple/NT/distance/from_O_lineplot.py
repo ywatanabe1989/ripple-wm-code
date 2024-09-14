@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 17:59:57 (ywatanabe)"
+# Time-stamp: "2024-09-14 18:02:46 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """This script calculates distance from O during pre-, mid-, and post-SWR+/- events"""

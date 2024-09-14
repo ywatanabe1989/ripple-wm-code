@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 09:03:38 (ywatanabe)"
+# Time-stamp: "2024-09-14 19:19:14 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/_load_ripples.py
 
 import mngs
