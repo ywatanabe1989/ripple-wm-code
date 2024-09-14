@@ -1,54 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 10:02:15 (ywatanabe)"
+# Time-stamp: "2024-09-14 17:27:31 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
-"""This script adds neural trajectory during SWR."""
+"""This script associates SWR data with neural trajectory."""
 
 """Imports"""
-import importlib
-import logging
-import os
-import re
 import sys
-import warnings
-from glob import glob
-from pprint import pprint
 
-import matplotlib
 import matplotlib.pyplot as plt
 import mngs
 import numpy as np
-import pandas as pd
-import seaborn as sns
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
-from tqdm import tqdm
-
-try:
-    from scripts import utils
-except:
-    pass
-
-"""Config"""
-# CONFIG = mngs.gen.load_configs()
 
 """Functions & Classes"""
 
 
-def find_peak_i(xx):
+def find_peak_i(swr):
     NT_TIME = eval(CONFIG.NT.TIME_AXIS)
-    xx["peak_i"] = xx["peak_s"].apply(
+    swr["peak_i"] = swr["peak_s"].apply(
         lambda x: mngs.gen.find_closest(NT_TIME, x)[1]
     )
-    return xx
+    return swr
 
 
-def add_NT(xx):
+def add_NT(swr):
     """Add Neural Trajectory (NT) data to the DataFrame."""
 
     def _load_nt(row):
@@ -83,9 +58,19 @@ def add_NT(xx):
         nt_padded = _slice_and_pad(nt, row, i_trial)
         return nt_padded
 
-    xx["NT"] = xx.apply(_add_NT_single, axis=1)
-    np.vstack(xx.NT)
-    return xx
+    swr["NT"] = swr.apply(_add_NT_single, axis=1)
+    np.vstack(swr.NT)
+    return swr
+
+
+def add_phase(swr):
+    swr["phase"] = str(np.nan)
+    for phase, phase_data in CONFIG.PHASES.items():
+        indi_phase = (phase_data.start <= swr.peak_i) * (
+            swr.peak_i < phase_data.end
+        )
+        swr.loc[indi_phase, "phase"] = phase
+    return swr
 
 
 def main():
@@ -101,7 +86,7 @@ def main():
             swr = mngs.io.load(lpath)
             swr = find_peak_i(swr)
             swr = add_NT(swr)
-            # swr = swr.drop(columns=["peak_i"])
+            swr = add_phase(swr)
 
             # Saving
             mngs.io.save(

@@ -26,8 +26,8 @@ main() {
         "./scripts/ripple/plot_SWR_p.py"
         "./scripts/ripple/stats/duration_amplitude.py"
         "./scripts/ripple/stats/time_course.py"
-        "./scripts/ripple/NT/adds_NT.py"
-        "./scripts/ripple/NT/distance_from_O.py"
+        "./scripts/ripple/NT/add_NT.py"
+        "./scripts/ripple/NT/distance/from_O.py"
         # "./scripts/ripple/check_SWR.py"
     )
 
