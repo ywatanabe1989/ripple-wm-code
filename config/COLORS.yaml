@@ -1,0 +1,10 @@
+COLORS:
+  Fixation: "gray"
+  Encoding: "blue"
+  Maintenance: "green"
+  Retrieval: "red"    
+  HIP: "light_blue"
+  EC: "pink"        
+  AMY: "brown"
+
+      

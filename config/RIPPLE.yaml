@@ -1,4 +1,6 @@
 RIPPLE:
+  TYPES:
+    ["SWR+", "SWR-"]
   LOW_HZ:
     80
 

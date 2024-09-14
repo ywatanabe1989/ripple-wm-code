@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 17:27:31 (ywatanabe)"
+# Time-stamp: "2024-09-14 22:42:06 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
 """This script associates SWR data with neural trajectory."""
@@ -73,6 +73,28 @@ def add_phase(swr):
     return swr
 
 
+def add_cosine(swr, ca1):
+    # Loading
+    GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
+    # SWR = mngs.io.load(mngs.gen.replace(CONFIG.PATH.RIPPLE_WITH_NT, ca1))
+    SWR = swr
+
+    # Base
+    vER = GS["Retrieval"] - GS["Encoding"]
+
+    # SWR direction
+    nt_swr = np.stack(SWR.NT, axis=0)
+    start, end = nt_swr.shape[-1] // 2 + np.array(CONFIG.RIPPLE.BINS.mid)
+    vSWR = nt_swr[..., end] - nt_swr[..., start]
+
+    cosine = np.array(
+        [mngs.linalg.cosine(vER, vSWR[ii]) for ii in range(len(vSWR))]
+    )
+
+    SWR["cosine_with_vER"] = cosine
+    return SWR
+
+
 def main():
     for ripple_type in ["RIPPLE", "RIPPLE_MINUS"]:
         for ca1 in CONFIG.ROI.CA1:
@@ -87,6 +109,7 @@ def main():
             swr = find_peak_i(swr)
             swr = add_NT(swr)
             swr = add_phase(swr)
+            swr = add_cosine(swr, ca1)
 
             # Saving
             mngs.io.save(
