@@ -9,7 +9,7 @@ RIPPLE:
     [[ 80, 140]]
 
   THRES_SD:
-    4.0
+    3.0
 
   MIN_DUR_MS:
     10

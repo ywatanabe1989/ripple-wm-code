@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 19:25:41 (ywatanabe)"
+# Time-stamp: "2024-09-14 20:18:28 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """This script calculates distance from O during pre-, mid-, and post-SWR+/- events"""
@@ -52,8 +52,8 @@ def plot_box(df):
                     }
                     dd = mngs.pd.slice(df, condi).distances.iloc[0]
                     dd = np.nanmean(dd, axis=-1)
+                    # dd = np.hstack(dd)
                     dd = dd[~np.isnan(dd)]
-                    print(dd)
                     data.append(dd)
                     label = mngs.gen.dict2str(condi)
                     labels.append(label)
@@ -66,7 +66,6 @@ def plot_box(df):
                 # positions=labels,
             )
             ax.legend(loc="upper left")
-            print(labels)
             ax.set_xyt(
                 None,
                 None,

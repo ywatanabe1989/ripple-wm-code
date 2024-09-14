@@ -23,6 +23,7 @@ main() {
         "./scripts/ripple/detect_and_define/define_SWR_m.py"
         "./scripts/ripple/detect_and_define/define_putative_CA1_using_UMAP.py"
         "./scripts/ripple/plot_SWR_p.py"
+        "./scripts/ripple/stats/count.py"        
         "./scripts/ripple/stats/duration_amplitude.py"
         "./scripts/ripple/stats/time_course.py"
         "./scripts/ripple/NT/add_NT.py"
@@ -58,5 +59,16 @@ rm -f "$LOG_PATH"
 touch "$LOG_PATH"
 main 2>&1 | tee -a "$LOG_PATH"
 echo -e "\nLogged to: $LOG_PATH"
+
+# Notification
+if command -v notify &> /dev/null
+then
+    notify \
+        -s "$0 ends" \
+        -m "$0 ends" \
+        -t "ywata1989@gmail.com"
+else
+    echo "notify command not found"
+fi
 
 # EOF
