@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 09:25:27 (ywatanabe)"
+# Time-stamp: "2024-09-14 10:02:15 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
 """This script adds neural trajectory during SWR."""
@@ -49,31 +49,42 @@ def find_peak_i(xx):
 
 
 def add_NT(xx):
-    def _add_NT(row):
-        i_trial = row.name - 1
-        nt = mngs.io.load(
+    """Add Neural Trajectory (NT) data to the DataFrame."""
+
+    def _load_nt(row):
+        return mngs.io.load(
             mngs.gen.replace(
                 CONFIG.PATH.NT_Z,
-                dict(
-                    sub=row.subject,
-                    session=row.session,
-                    roi=row.roi,
-                ),
+                dict(sub=row.subject, session=row.session, roi=row.roi),
             )
         )
+
+    def _slice_and_pad(nt, row, i_trial):
+        # Slicing
         lim = (0, eval(CONFIG.NT.N_BINS))
         start = row.peak_i + CONFIG.RIPPLE.BINS.pre[0]
         end = row.peak_i + CONFIG.RIPPLE.BINS.post[1]
-        start = np.clip(start, *lim).astype(int)
-        end = np.clip(end, *lim).astype(int)
-        nt = nt[
-            i_trial,
-            :,
-            start:end,
-        ]
-        return nt
+        width_ideal = end - start
+        start_clipped, end_clipped = np.clip([start, end], *lim).astype(int)
+        nt_slice = nt[i_trial, :, start_clipped:end_clipped]
 
-    xx["NT"] = xx.apply(_add_NT, axis=1)
+        # Padding
+        if nt_slice.shape[1] == width_ideal:
+            return nt_slice
+
+        padded = np.full((nt_slice.shape[0], width_ideal), np.nan)
+        n_left_pad = abs(start - start_clipped)
+        padded[:, n_left_pad : n_left_pad + nt_slice.shape[1]] = nt_slice
+        return padded
+
+    def _add_NT_single(row):
+        i_trial = row.name - 1
+        nt = _load_nt(row)
+        nt_padded = _slice_and_pad(nt, row, i_trial)
+        return nt_padded
+
+    xx["NT"] = xx.apply(_add_NT_single, axis=1)
+    np.vstack(xx.NT)
     return xx
 
 
