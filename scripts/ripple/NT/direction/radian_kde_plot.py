@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-15 15:10:37 (ywatanabe)"
+# Time-stamp: "2024-09-15 15:10:11 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """
@@ -26,10 +26,12 @@ from scripts import utils
 from scripts.ripple.NT.distance.from_O_lineplot import calc_dist_by_condi
 
 """Functions & Classes"""
+XLIM = (0, np.pi)
+# XLIM = (None, None)
 
 
 def process_data(swr_all, match, SWR_direction_def):
-    cosine = {}
+    radian = {}
     for ca1 in CONFIG.ROI.CA1:
         swr_all["sub"] = swr_all["subject"]
         df = mngs.pd.slice(swr_all, ca1)
@@ -44,17 +46,17 @@ def process_data(swr_all, match, SWR_direction_def):
             v2_SWR = np.vstack(df_R[f"vSWR_def{SWR_direction_def}"])
             v_ER = np.vstack(df_R[f"vER"])
 
-            cosine[f"{ca1.values()}_{swr_type}_eSWR_vs_rSWR"] = 1 - cdist(
-                v1_SWR, v2_SWR, metric="cosine"
-            ).reshape(-1)
-            cosine[f"{ca1.values()}_{swr_type}_eSWR_vs_vER"] = (
+            radian[f"{ca1.values()}_{swr_type}_eSWR_vs_rSWR"] = np.arccos(
+                1 - cdist(v1_SWR, v2_SWR, metric="cosine").reshape(-1)
+            )
+            radian[f"{ca1.values()}_{swr_type}_eSWR_vs_vER"] = np.arccos(
                 1 - cdist(v1_SWR, v_ER, metric="cosine")[:, 0]
             )
-            cosine[f"{ca1.values()}_{swr_type}_rSWR_vs_vER"] = (
+            radian[f"{ca1.values()}_{swr_type}_rSWR_vs_vER"] = np.arccos(
                 1 - cdist(v2_SWR, v_ER, metric="cosine")[:, 0]
             )
 
-    df = mngs.pd.force_df(cosine)
+    df = mngs.pd.force_df(radian)
     return df
 
 
@@ -69,7 +71,7 @@ def main(SWR_direction_def=1):
     df_out = process_data(swr_all, 2, SWR_direction_def)
 
     fig, axes = mngs.plt.subplots(
-        ncols=3, nrows=3, figsize=(15, 15), sharex=True, sharey=False
+        ncols=3, nrows=3, figsize=(15, 15), sharex=True, sharey=True
     )
 
     for col, (df, title) in enumerate(
@@ -78,7 +80,8 @@ def main(SWR_direction_def=1):
         for i_swr_type, swr_type in enumerate(CONFIG.RIPPLE.TYPES):
             ax = axes[i_swr_type, col]
             ax.set_title(f"{title} - {swr_type}")
-            ax.set_ylim(5 * 1e-4, 15 * 1e-4)
+            ax.set_xlim(*XLIM)
+            # ax.set_ylim(0 * 1e-4, 20 * 1e-4)
 
             for comparison in ["eSWR_vs_rSWR", "eSWR_vs_vER", "rSWR_vs_vER"]:
                 data = df[
@@ -95,10 +98,9 @@ def main(SWR_direction_def=1):
                     label=f"{comparison}",
                     id=f"{title}-{comparison}-{swr_type}",
                     color=CC[CONFIG.COLORS[comparison]],
-                    xlim=(-1, 1),
+                    xlim=XLIM,
                 )
             ax.legend()
-            ax.set_ylim(6e-4, 14e-4)
 
     # Difference plot
     plotted = axes.to_sigma()
@@ -140,14 +142,11 @@ def main(SWR_direction_def=1):
             )
 
         ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
-        ax.set_ylim(-4e-4, 4e-4)
+        # ax.set_ylim(-10e-4, 10e-4)
+        ax.set_xlim(*XLIM)
         ax.legend()
 
-    # fig.supxyt(f"Cosine similarity (def. {SWR_direction_def})", "KDE density")
-    # mngs.io.save(
-    #     fig, f"kde_SWR_vER_comparisons_def{SWR_direction_def}_combined.jpg"
-    # )
-    fig.supxyt(f"Cosine (vSWR def. {SWR_direction_def})", "KDE density")
+    fig.supxyt(f"Radian (vSWR def. {SWR_direction_def})", "KDE density")
     mngs.io.save(fig, f"kde_vSWR_def{SWR_direction_def}.jpg")
 
 

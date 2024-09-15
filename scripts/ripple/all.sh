@@ -31,6 +31,8 @@ main() {
         "./scripts/ripple/NT/distance/from_O_boxplot.py"
         "./scripts/ripple/NT/distance/stats.py"
         "./scripts/ripple/NT/direction/kde_plot_in_out.py"
+        "./scripts/ripple/NT/direction/cosine_kde_plot.py"
+        "./scripts/ripple/NT/direction/radian_kde_plot.py"        
         # "./scripts/ripple/check_SWR.py"
     )
 
