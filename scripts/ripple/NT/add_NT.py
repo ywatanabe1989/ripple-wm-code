@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-15 11:11:26 (ywatanabe)"
+# Time-stamp: "2024-09-15 13:25:49 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
 """This script associates SWR data with neural trajectory."""
@@ -78,7 +78,9 @@ def add_vER(SWR, ca1):
     GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
 
     # Main
-    SWR["vER"] = GS["Retrieval"] - GS["Encoding"]
+    SWR["vER"] = [
+        np.array(GS["Retrieval"] - GS["Encoding"]) for _ in range(len(SWR))
+    ]
 
     return SWR
 
@@ -114,9 +116,21 @@ def add_vSWR_base_to_peak(SWR):
 add_vSWR_def2 = add_vSWR_base_to_peak
 
 
-def add_cosine_def1(SWR):
-    SWR["cosine_def1"] = [
-        mngs.linalg.cosine(SWR["vSWR_def1"].iloc[ii], SWR["vER"].iloc[ii])
+def add_radian_def1(SWR):
+    SWR["radian_def1"] = [
+        np.arccos(
+            mngs.linalg.cosine(SWR["vSWR_def1"].iloc[ii], SWR["vER"].iloc[ii])
+        )
+        for ii in range(len(SWR))
+    ]
+    return SWR
+
+
+def add_radian_def2(SWR):
+    SWR["radian_def2"] = [
+        np.arccos(
+            mngs.linalg.cosine(SWR["vSWR_def2"].iloc[ii], SWR["vER"].iloc[ii])
+        )
         for ii in range(len(SWR))
     ]
     return SWR
@@ -139,7 +153,8 @@ def main():
             swr = add_vER(swr, ca1)
             swr = add_vSWR_def1(swr)
             swr = add_vSWR_def2(swr)
-            swr = add_cosine_def1(swr)
+            swr = add_radian_def1(swr)
+            swr = add_radian_def2(swr)
 
             # Saving
             mngs.io.save(

@@ -6,5 +6,11 @@ COLORS:
   HIP: "light_blue"
   EC: "pink"        
   AMY: "brown"
+  SWR+: "purple"
+  SWR-: "yellow"
+  SWR+ - SWR-: "purple"
+  eSWR_vs_vER: "light_blue"
+  rSWR_vs_vER: "brown"  
+  eSWR_vs_rSWR: "pink"
 
       
