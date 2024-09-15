@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 22:42:06 (ywatanabe)"
+# Time-stamp: "2024-09-15 11:11:26 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
 """This script associates SWR data with neural trajectory."""
@@ -73,25 +73,52 @@ def add_phase(swr):
     return swr
 
 
-def add_cosine(swr, ca1):
+def add_vER(SWR, ca1):
     # Loading
     GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
-    # SWR = mngs.io.load(mngs.gen.replace(CONFIG.PATH.RIPPLE_WITH_NT, ca1))
-    SWR = swr
 
-    # Base
-    vER = GS["Retrieval"] - GS["Encoding"]
+    # Main
+    SWR["vER"] = GS["Retrieval"] - GS["Encoding"]
 
-    # SWR direction
+    return SWR
+
+
+def add_vSWR_mid_start_to_mid_end(SWR):
     nt_swr = np.stack(SWR.NT, axis=0)
     start, end = nt_swr.shape[-1] // 2 + np.array(CONFIG.RIPPLE.BINS.mid)
     vSWR = nt_swr[..., end] - nt_swr[..., start]
+    SWR["vSWR_def1"] = [vSWR[ii] for ii in range(len(vSWR))]
+    return SWR
 
-    cosine = np.array(
-        [mngs.linalg.cosine(vER, vSWR[ii]) for ii in range(len(vSWR))]
-    )
 
-    SWR["cosine_with_vER"] = cosine
+add_vSWR_def1 = add_vSWR_mid_start_to_mid_end
+
+
+def add_vSWR_base_to_peak(SWR):
+    nt_swr = np.stack(SWR.NT, axis=0)
+
+    # Indices
+    mid = nt_swr.shape[-1] // 2
+    mid_start, mid_end = mid + np.array(CONFIG.RIPPLE.BINS.mid)
+
+    # Direction
+    coord_base = (nt_swr[..., mid_end] + nt_swr[..., mid_start]) / 2
+    coord_peak = nt_swr[..., mid]
+    vSWR = coord_peak - coord_base
+
+    SWR["vSWR_def2"] = [vSWR[ii] for ii in range(len(vSWR))]
+
+    return SWR
+
+
+add_vSWR_def2 = add_vSWR_base_to_peak
+
+
+def add_cosine_def1(SWR):
+    SWR["cosine_def1"] = [
+        mngs.linalg.cosine(SWR["vSWR_def1"].iloc[ii], SWR["vER"].iloc[ii])
+        for ii in range(len(SWR))
+    ]
     return SWR
 
 
@@ -109,7 +136,10 @@ def main():
             swr = find_peak_i(swr)
             swr = add_NT(swr)
             swr = add_phase(swr)
-            swr = add_cosine(swr, ca1)
+            swr = add_vER(swr, ca1)
+            swr = add_vSWR_def1(swr)
+            swr = add_vSWR_def2(swr)
+            swr = add_cosine_def1(swr)
 
             # Saving
             mngs.io.save(

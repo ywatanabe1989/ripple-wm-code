@@ -13,9 +13,9 @@
 ```bash
 ./scripts/load/all.sh
 ./scripts/demographic/all.sh
-./scripts/ripple/all.sh
 ./scripts/GPFA/all.sh
 ./scripts/NT/all.sh
+./scripts/ripple/all.sh
 ./scripts/memory_load/all.sh
 ```
 

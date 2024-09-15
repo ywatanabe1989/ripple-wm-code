@@ -33,6 +33,7 @@ main() {
     ./scripts/NT/distance/between_gs/dists_stats.py
     ./scripts/NT/distance/between_gs/MTL_regions.py
 
+
     # Closing
     echo -e "$0 ends"
 }
