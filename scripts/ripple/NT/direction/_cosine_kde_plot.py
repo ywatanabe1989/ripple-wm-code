@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-15 15:10:37 (ywatanabe)"
+# Time-stamp: "2024-09-15 23:57:48 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """
@@ -11,6 +11,7 @@ This version creates a 3x3 grid of plots:
 2. eSWR-*rSWR-, eSWR-*vER, rSWR-*vER
 3. Differences
 """
+
 
 """Imports"""
 import os

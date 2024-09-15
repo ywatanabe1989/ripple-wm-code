@@ -3,6 +3,7 @@
 # Script path: ./scripts/ripple/all.sh
 
 LOG_PATH="${0%.sh}.log"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 usage() {
     echo "Usage: $0 [-h|--help]"
@@ -19,28 +20,29 @@ main() {
     echo "$0 starts."
 
     local scripts=(
-        "./scripts/ripple/detect_and_define/detect_SWR_p.py"
-        "./scripts/ripple/detect_and_define/define_SWR_m.py"
-        "./scripts/ripple/detect_and_define/define_putative_CA1_using_UMAP.py"
-        "./scripts/ripple/plot_SWR_p.py"
-        "./scripts/ripple/stats/count.py"        
-        "./scripts/ripple/stats/duration_amplitude.py"
-        "./scripts/ripple/stats/time_course.py"
-        "./scripts/ripple/NT/add_NT.py"
-        "./scripts/ripple/NT/distance/from_O_lineplot.py"        
-        "./scripts/ripple/NT/distance/from_O_boxplot.py"
-        "./scripts/ripple/NT/distance/stats.py"
-        "./scripts/ripple/NT/direction/kde_plot_in_out.py"
-        "./scripts/ripple/NT/direction/cosine_kde_plot.py"
-        "./scripts/ripple/NT/direction/radian_kde_plot.py"        
-        # "./scripts/ripple/check_SWR.py"
+        "./detect_and_define/detect_SWR_p.py"
+        "./detect_and_define/define_SWR_m.py"
+        "./detect_and_define/define_putative_CA1_using_UMAP.py"
+        "./plot_SWR_p.py"
+        "./stats/count.py"        
+        "./stats/duration_amplitude.py"
+        "./stats/time_course.py"
+        "./NT/add_NT.py"
+        "./NT/distance/from_O_lineplot.py"        
+        "./NT/distance/from_O_boxplot.py"
+        "./NT/distance/stats.py"
+        "./NT/direction/kde_plot.py"
+        # "./NT/direction/cosine_kde_plot.py"        
+        # "./NT/direction/cosine_kde_plot.py"
+        # "./NT/direction/radian_kde_plot.py"        
+        # "./check_SWR.py"
     )
 
     for script in "${scripts[@]}"; do
         echo -e "\n--------------------------------------------------------------------------------"
         echo "$script starts"
         echo -e "--------------------------------------------------------------------------------\n"
-        python "$script" 2>&1 | tee -a "$LOG_PATH"
+        python "$SCRIPT_DIR"/"$script" 2>&1 | tee -a "$LOG_PATH"
     done
 
     echo "$0 ends"
