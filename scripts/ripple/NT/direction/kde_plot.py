@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-16 10:41:04 (ywatanabe)"
+# Time-stamp: "2024-09-16 10:41:37 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """
@@ -225,7 +225,7 @@ def main(
     if control:
         spath = spath.replace(".jpg", "_control.jpg")
 
-    if consine_or_radian == "cosine":
+    if cosine_or_radian == "cosine":
         xlabel = (
             f"{cosine_or_radian} (vSWR def. {SWR_direction_def}) (dissimilar <---> similar)",
         )
