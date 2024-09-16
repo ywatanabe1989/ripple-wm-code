@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-16 20:36:12 (ywatanabe)"
+# Time-stamp: "2024-09-16 21:04:11 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/stats.py
 
 """
@@ -87,40 +87,19 @@ from scipy import stats
 """Functions & Classes"""
 
 
-# def run_ks_test(data1, data2):
-#     """
-#     Perform a two-sample Kolmogorov-Smirnov test.
-
-#     Parameters
-#     ----------
-#     data1 : array-like
-#         First sample data
-#     data2 : array-like
-#         Second sample data
-
-#     Returns
-#     -------
-#     statistic : float
-#         KS statistic
-#     p_value : float
-#         p-value of the test
-#     """
-#     statistic, p_value = stats.ks_2samp(data1, data2)
-#     return statistic, p_value
-
-
 def determine_col(df, comparison, swr_type, match, set_size):
     match_str = CONFIG.MATCHES_STR[str(match)]
-    exp = rf"{match_str}-{comparison}-{set_size}-{swr_type}_boxplot".replace(
-        "SWR+_", "SWR\+_"
-    ).replace("SWR-_", "SWR\-_")
+    with mngs.gen.suppress_output():
+        exp = (
+            rf"{match_str}-{comparison}-{set_size}-{swr_type}_boxplot".replace(
+                "SWR+_", "SWR\+_"
+            ).replace("SWR-_", "SWR\-_")
+        )
     cols = mngs.gen.search(
         exp,
         df.columns,
     )[1]
     if len(cols) != 1:
-        pprint(exp)
-        pprint(cols)
         __import__("ipdb").set_trace()
     return cols[0]
 
@@ -155,9 +134,7 @@ def perform_tests(df, hypotheses, match, set_size, control):
 
     results = pd.DataFrame(results).T
     results["stars"] = results.p_value.apply(mngs.stats.p2stars)
-    # results["match"] = match
-    # results["set_size"] = set_size
-    # results["control"] = control
+
     return results
 
 
@@ -184,7 +161,6 @@ def main():
                         )
                         lpaths = mngs.gen.glob(exp)
                         if len(lpaths) != 1:
-                            print(exp)
                             __import__("ipdb").set_trace()
                         df = mngs.io.load(lpaths[0])
 
@@ -197,26 +173,33 @@ def main():
                         _results["match"] = match
                         _results["set_size"] = set_size
                         _results["control"] = control
-                        print(
-                            f"\nResults for vSWR_def{def_num}, {measure}, "
-                            f"set_size_{set_size}, {'control' if control else 'non-control'}:"
-                        )
+
                         for hypothesis, result in _results.items():
                             results.append(_results)
-                            # p_stars = mngs.stats.p2stars(result["p_value"])
-                            print(_results)
-                            # print(
-                            #     f"{hypothesis}: Statistic = {result['statistic']:.3f}, "
-                            #     f"p-value = {result['p_value']:.3f}{p_stars} "
-                            #     f"(n={result['sample_size']:,}, eff={result['effect_size']:.3f})"
-                            # )
+
     results = pd.concat(results)
-    print(results)
+    results = results.reset_index()
+    results = results.rename(columns={"index": "H0"})
     results = results.set_index(
-        ["match", "measure", "set_size", "control", "SWR_direction_definition"]
+        [
+            "H0",
+            "match",
+            "measure",
+            "set_size",
+            "control",
+            "SWR_direction_definition",
+        ]
     )
     results = results[["p_value", "stars", "effsize", "dof", "w_statistic"]]
+
+    # Saving
+    print(results)
     mngs.io.save(results, "stats.csv")
+
+    H0_values = results.index.get_level_values("H0")
+    for h0 in np.unique(H0_values):
+        results_h0 = results[H0_values == h0]
+        mngs.io.save(results_h0, f"stats_{h0}.csv")
 
 
 if __name__ == "__main__":
