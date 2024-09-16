@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-14 18:02:46 (ywatanabe)"
+# Time-stamp: "2024-09-16 19:06:59 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """This script calculates distance from O during pre-, mid-, and post-SWR+/- events"""
@@ -91,7 +91,7 @@ def plot_line(df):
         tt = np.arange(len(described["mean"])) * CONFIG.GPFA.BIN_SIZE_MS
         tt -= int(tt.mean())
 
-        ax.mplot(
+        ax._plot(
             xx=tt,
             **described,
             label=condi["SWR_type"],

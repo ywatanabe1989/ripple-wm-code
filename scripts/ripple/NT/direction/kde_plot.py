@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-16 10:41:37 (ywatanabe)"
+# Time-stamp: "2024-09-16 19:36:24 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """
@@ -118,42 +118,19 @@ def process_data(
     return mngs.pd.force_df(cosine_or_radian)
 
 
-def main(
-    SWR_direction_def=1, set_size=4, control=False, cosine_or_radian="cosine"
-):
-    swr_p_all, swr_m_all = utils.load_ripples(with_NT=True)
-    swr_p_all["swr_type"] = "SWR+"
-    swr_m_all["swr_type"] = "SWR-"
-    swr_all = pd.concat([swr_p_all, swr_m_all])
+def plot_first_two_rows(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
+    for col, match in enumerate(MATCHES):
+        df = dfs[match]
 
-    calc_fn = {
-        "cosine": calc_cosine,
-        "radian": calc_radian,
-    }[cosine_or_radian]
+        match_str = CONFIG.MATCHES_STR[str(match)]
 
-    df_all = process_data(
-        swr_all, "all", set_size, SWR_direction_def, control, calc_fn
-    )
-    df_in = process_data(
-        swr_all, 1, set_size, SWR_direction_def, control, calc_fn
-    )
-    df_out = process_data(
-        swr_all, 2, set_size, SWR_direction_def, control, calc_fn
-    )
-
-    fig, axes = mngs.plt.subplots(
-        ncols=3, nrows=3, figsize=(15, 15), sharex=True, sharey=True
-    )
-
-    for col, (df, title) in enumerate(
-        zip([df_all, df_in, df_out], ["All", "Match IN", "Mismatch OUT"])
-    ):
-        for i_swr_type, swr_type in enumerate(CONFIG.RIPPLE.TYPES):
+        for i_swr_type, swr_type in enumerate(SWR_TYPES[:-1]):
             ax = axes[i_swr_type, col]
-            ax.set_title(f"{title} - {swr_type}")
+            _ax = _axes[i_swr_type, col]
+            ax.set_title(f"{match_str} - {swr_type}")
             ax.set_xlim(*XLIM[cosine_or_radian])
 
-            for comparison in COMPARISONS:
+            for i_comparison, comparison in enumerate(COMPARISONS):
                 data = df[
                     [
                         col
@@ -166,43 +143,59 @@ def main(
                 ax.kde(
                     data,
                     label=f"{comparison}",
-                    id=f"{title}-{comparison}-{set_size}-{swr_type}",
+                    id=f"{match_str}-{comparison}-{set_size}-{swr_type}",
                     color=CC[CONFIG.COLORS[comparison]],
                     xlim=XLIM[cosine_or_radian],
                 )
-            ax.legend()
 
+                _ax.boxplot(
+                    data,
+                    label=f"{comparison}",
+                    id=f"{match_str}-{comparison}-{set_size}-{swr_type}",
+                    positions=[i_comparison],
+                    # c=CC[CONFIG.COLORS[comparison]],
+                )
+            ax.legend()
+            _ax.set_xyt(COMPARISONS, None, None)
+    return fig, axes, _fig, _axes
+
+
+def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
     # Difference plot
     plotted = axes.to_sigma()
 
-    for col, (df, title) in enumerate(
-        zip([df_all, df_in, df_out], ["All", "Match IN", "Mismatch OUT"])
-    ):
-        ax = axes[2, col]
-        ax.set_title(f"{title} - Diff (SWR+ - SWR-)")
+    for col, match in enumerate(MATCHES):
+        df = dfs[match]
+        match_str = CONFIG.MATCHES_STR[str(match)]
 
-        for comparison in COMPARISONS:
+        ax = axes[2, col]
+        _ax = _axes[2, col]
+
+        swr_type = SWR_TYPES[-1]
+        ax.set_title(f"{match_str} - {swr_type}")
+
+        for i_comparison, comparison in enumerate(COMPARISONS):
             x_p = plotted[
                 mngs.gen.search(
-                    rf"{title}-{comparison}-{set_size}-SWR\+_kde_x",
+                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[0]}_kde_x",
                     plotted.columns,
                 )[1]
             ]
             kde_p = plotted[
                 mngs.gen.search(
-                    rf"{title}-{comparison}-{set_size}-SWR\+_kde_kde",
+                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[0]}_kde_kde",
                     plotted.columns,
                 )[1]
             ]
             x_m = plotted[
                 mngs.gen.search(
-                    rf"{title}-{comparison}-{set_size}-SWR\-_kde_x",
+                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[1]}_kde_x",
                     plotted.columns,
                 )[1]
             ]
             kde_m = plotted[
                 mngs.gen.search(
-                    rf"{title}-{comparison}-{set_size}-SWR\-_kde_kde",
+                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[1]}_kde_kde",
                     plotted.columns,
                 )[1]
             ]
@@ -212,15 +205,76 @@ def main(
                 np.hstack(np.array(x_p)),
                 np.hstack(kde_diff),
                 label=f"{comparison}",
-                id=f"{title}-{comparison}-{set_size}-diff (SWR+ - SWR-)",
+                id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
                 color=CC[CONFIG.COLORS[f"{comparison}"]],
+            )
+
+            _ax.boxplot(
+                np.hstack(kde_diff),
+                label=f"{comparison}",
+                id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
+                positions=[i_comparison],
             )
 
         ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
         ax.set_xlim(*XLIM[cosine_or_radian])
         ax.set_ylim(*YLIM[cosine_or_radian])
         ax.legend()
+        _ax.set_xyt(COMPARISONS, None, None)
 
+    return fig, axes, _fig, _axes
+
+
+def main(
+    SWR_direction_def=1, set_size=4, control=False, cosine_or_radian="cosine"
+):
+    MATCHES = ["all"] + CONFIG.MATCHES
+    SWR_TYPES = CONFIG.RIPPLE.TYPES + ["Diff (SWR+ - SWR-)"]
+
+    swr_p_all, swr_m_all = utils.load_ripples(with_NT=True)
+    swr_p_all["swr_type"] = "SWR+"
+    swr_m_all["swr_type"] = "SWR-"
+    swr_all = pd.concat([swr_p_all, swr_m_all])
+
+    calc_fn = {
+        "cosine": calc_cosine,
+        "radian": calc_radian,
+    }[cosine_or_radian]
+
+    dfs = {
+        match: process_data(
+            swr_all, match, set_size, SWR_direction_def, control, calc_fn
+        )
+        for match in MATCHES
+    }
+
+    # Plotting
+    fig, axes = mngs.plt.subplots(
+        ncols=len(MATCHES),
+        nrows=len(SWR_TYPES),
+        figsize=(15, 15),
+        sharex=True,
+        sharey=True,
+    )
+
+    # For referencing raw data afterwards
+    _fig, _axes = mngs.plt.subplots(
+        ncols=len(MATCHES),
+        nrows=len(SWR_TYPES),
+        sharex=True,
+        sharey=True,
+    )
+
+    # Storing KDE data as well
+    fig, axes, _fig, _axes = plot_first_two_rows(
+        dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES
+    )
+    # Takes difference between the KDE data
+    fig, axes, _fig, _axes = plot_first_two_rows(
+        dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES
+    )
+
+    # Saving
     spath = f"./kde_vSWR_def{SWR_direction_def}/{cosine_or_radian}/set_size_{set_size}.jpg"
     if control:
         spath = spath.replace(".jpg", "_control.jpg")
@@ -239,6 +293,14 @@ def main(
         spath,
     )
     mngs.io.save(fig, spath, from_cwd=True)
+
+    # For referencing raw data afterwards
+    spath = spath.replace(".jpg", "_box.jpg")
+    _fig.supxyt(None, xlabel, spath)
+    mngs.io.save(_fig, spath, from_cwd=True)
+
+    # Cleanup
+    plt.close("all")
 
 
 if __name__ == "__main__":
