@@ -1,15 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-15 23:29:06 (ywatanabe)"
+# Time-stamp: "2024-09-16 10:41:04 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/distance_from_O.py
 
 """
-This version creates a 3x3 grid of plots:
-- Columns: All data, Match IN, Mismatch OUT
-- Rows:
-1. eSWR+*rSWR+, eSWR+*vER, rSWR+*vER
-2. eSWR-*rSWR-, eSWR-*vER, rSWR-*vER
-3. Differences
+This script calculate and visualize distributions of radian/cosine of vectors. All plotted data are saved not only as jpg and but as csv (data values), due to the mngs package.
+
+- Vectors
+  - eSWR+ (SWR during Encoding)
+  - eSWR- (Control SWR during Encoding)
+  - rSWR+ (SWR during Retrieval phase)
+  - rSWR- (Control SWR during Retrieval phase)
+  - ER (vector of geometric medians of Encoding to Retrieval)
+
+- Sternburg Task
+  - set size
+    - The number of alphabetical letters presented
+  - Match IN task
+    - When the probe letter is included in the letters to be encoded
+  - Mismatch OUT task
+    - When the probe letter is not included in the letters to be encoded
 """
 
 """Imports"""
@@ -197,9 +207,10 @@ def main(
                 )[1]
             ]
             kde_diff = np.array(kde_p) - np.array(kde_m)
+
             ax.plot(
-                x_p,
-                kde_diff,
+                np.hstack(np.array(x_p)),
+                np.hstack(kde_diff),
                 label=f"{comparison}",
                 id=f"{title}-{comparison}-{set_size}-diff (SWR+ - SWR-)",
                 color=CC[CONFIG.COLORS[f"{comparison}"]],
@@ -213,8 +224,17 @@ def main(
     spath = f"./kde_vSWR_def{SWR_direction_def}/{cosine_or_radian}/set_size_{set_size}.jpg"
     if control:
         spath = spath.replace(".jpg", "_control.jpg")
+
+    if consine_or_radian == "cosine":
+        xlabel = (
+            f"{cosine_or_radian} (vSWR def. {SWR_direction_def}) (dissimilar <---> similar)",
+        )
+    else:
+        xlabel = (
+            f"{cosine_or_radian} (vSWR def. {SWR_direction_def}) (similar <---> dissimilar)",
+        )
     fig.supxyt(
-        f"{cosine_or_radian} (vSWR def. {SWR_direction_def}) (similar <---> dissimilar)",
+        xlabel,
         "KDE density",
         spath,
     )

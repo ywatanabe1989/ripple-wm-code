@@ -32,6 +32,7 @@ main() {
         "./NT/distance/from_O_boxplot.py"
         "./NT/distance/stats.py"
         "./NT/direction/kde_plot.py"
+        "./NT/direction/stats.py"        
         # "./NT/direction/cosine_kde_plot.py"        
         # "./NT/direction/cosine_kde_plot.py"
         # "./NT/direction/radian_kde_plot.py"        
