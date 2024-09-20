@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-17 13:59:02 (ywatanabe)"
+# Time-stamp: "2024-09-19 09:22:58 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/stats.py
 
 """
@@ -50,15 +50,15 @@ from scipy import stats
 
 HYPOTHESES = [
     # SWR+ vs SWR-
-    ("H0-1", "eSWR+_vs_eSWR-", "SWR+", "SWR-"),
-    ("H0-2", "rSWR+_vs_rSWR-", "SWR+", "SWR-"),
+    ("H0-1", "eSWR+_vs_eSWR-"),
+    ("H0-2", "rSWR+_vs_rSWR-"),
     # eSWR+ vs rSWR+
-    ("H0-3", "eSWR+_vs_rSWR+", "SWR+", "SWR+"),
+    ("H0-3", "eSWR+_vs_rSWR+"),
     # SWR+ vs ER
-    ("H0-4", "eSWR+_vs_vER", "SWR+", "SWR+"),
-    ("H0-5", "eSWR-_vs_vER", "SWR-", "SWR-"),
-    ("H0-6", "rSWR+_vs_vER", "SWR+", "SWR+"),
-    ("H0-7", "rSWR-_vs_vER", "SWR-", "SWR-"),
+    ("H0-4", "eSWR+_vs_vER"),
+    ("H0-5", "eSWR-_vs_vER"),
+    ("H0-6", "rSWR+_vs_vER"),
+    ("H0-7", "rSWR-_vs_vER"),
 ]
 
 """Functions & Classes"""
@@ -81,7 +81,7 @@ def determine_col(df, comparison, swr_type, match, set_size):
     return cols[0]
 
 
-def perform_tests(df, hypotheses, match, set_size, control):
+def perform_tests(df, hypotheses, match, set_size):
     """
     Perform statistical tests based on given hypotheses.
 
@@ -127,31 +127,30 @@ def main():
         for measure in ["radian", "cosine"]:
             for match in ["all"] + CONFIG.MATCHES:
                 for set_size in ["all"] + CONFIG.SET_SIZES:
-                    for control in [True, False]:
-                        if (match != "all") or (control != False):
-                            continue
+                    if (match != "all"):
+                        continue
 
-                        exp = (
-                            f"{base_path}/kde_vSWR_def{def_num}/{measure}/"
-                            f"set_size_{set_size}{'_control' if control else ''}_box.csv"
-                        )
-                        lpaths = mngs.gen.glob(exp)
-                        if len(lpaths) != 1:
-                            __import__("ipdb").set_trace()
-                        df = mngs.io.load(lpaths[0])
+                    exp = (
+                        f"{base_path}/kde_vSWR_def{def_num}/{measure}/"
+                        f"set_size_{set_size}_box.csv"
+                    )
+                    lpaths = mngs.gen.glob(exp)
+                    if len(lpaths) != 1:
+                        __import__("ipdb").set_trace()
+                    df = mngs.io.load(lpaths[0])
+                    __import__("ipdb").set_trace()
 
-                        # implement calculation of results here
-                        _results = perform_tests(
-                            df, hypotheses, match, set_size, control
-                        )
-                        _results["SWR_direction_definition"] = def_num
-                        _results["measure"] = measure
-                        _results["match"] = match
-                        _results["set_size"] = set_size
-                        _results["control"] = control
+                    # implement calculation of results here
+                    _results = perform_tests(
+                        df, hypotheses, match, set_size
+                    )
+                    _results["SWR_direction_definition"] = def_num
+                    _results["measure"] = measure
+                    _results["match"] = match
+                    _results["set_size"] = set_size
 
-                        results.append(_results)
-                        count += 1
+                    results.append(_results)
+                    count += 1
 
     df = pd.concat(results)
     df = df.reset_index()
@@ -161,7 +160,6 @@ def main():
     df = df.set_index(
         [
             "H0",
-            "control",
             "match",
             "SWR_direction_definition",
             "measure",

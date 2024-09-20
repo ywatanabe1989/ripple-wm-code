@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-19 09:10:39 (ywatanabe)"
+# Time-stamp: "2024-09-19 21:15:48 (ywatanabe)"
 # /ssh:ywatanabe@crest:/mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/kde_plot.py
 
 """
@@ -54,68 +54,90 @@ COMPARISONS = [
 ]
 
 
-def calc_measure(v1, v2, measure, all_combinations):
-    def calc_radian(v1, v2, all_combinations):
+def calc_measure(v1, v2, measure):
+    def calc_cosine(v1, v2):
         result = 1 - cdist(v1, v2, metric="cosine")
-        return np.arccos(result.reshape(-1) if all_combinations else result[:, 0])
+        return result.reshape(-1)
 
-
-    def calc_cosine(v1, v2, reshape):
+    def calc_radian(v1, v2):
         result = 1 - cdist(v1, v2, metric="cosine")
-        return result.reshape(-1) if all_combinations else result[:, 0]
+        return np.arccos(result.reshape(-1))
 
     if measure == "cosine":
-        return calc_cosine(v1, v2, all_combinations)
+        return calc_cosine(v1, v2)
     elif measure == "radian":
-        return calc_radian(v1, v2, all_combinations)
+        return calc_radian(v1, v2)
+
+# def calc_measure(v1, v2, measure, all_combinations):
+#     def calc_radian(v1, v2, all_combinations):
+#         result = 1 - cdist(v1, v2, metric="cosine")
+#         return np.arccos(result.reshape(-1) if all_combinations else result[:, 0])
+
+#     def calc_cosine(v1, v2, reshape):
+#         result = 1 - cdist(v1, v2, metric="cosine")
+#         return result.reshape(-1) if all_combinations else result[:, 0]
+
+#     if measure == "cosine":
+#         return calc_cosine(v1, v2, all_combinations)
+#     elif measure == "radian":
+#         return calc_radian(v1, v2, all_combinations)
+
+def get_eSWR_rSWR_vER(swr, swr_type, SWR_dir_def):
+    swr = swr[swr.swr_type == swr_type].copy()
+    vER = np.vstack(swr["vER"])
+    assert np.unique(vER, axis=0).shape[0] == 1
+    vER = vER[0]
+    eSWR = swr[swr.phase == "Encoding"]
+    rSWR = swr[swr.phase == "Retrieval"]
+
+
+    if eSWR.empty:
+        return None
+
+    if rSWR.empty:
+        return None
+
+    vectors = {
+        "eSWR": np.vstack(eSWR[f"vSWR_def{SWR_dir_def}"]),
+        "rSWR": np.vstack(rSWR[f"vSWR_def{SWR_dir_def}"]),
+        "vER": vER[np.newaxis, :],
+    }
+    return vectors
 
 def process_comparisons(
-    swr_all, match, set_size, SWR_direction_def, measure
+    swr_all, match, set_size, SWR_dir_def, measure
 ):
-    data = {}
+    swr = swr_all[swr_all.match == match] if match != "all" else swr_all
+    swr = swr[swr.set_size == set_size] if set_size != "all" else swr
+
+    data = mngs.gen.listed_dict()
     for ca1 in CONFIG.ROI.CA1:
-        df = mngs.pd.slice(swr_all.assign(sub=swr_all.subject), ca1)
-        df = df[df.match == match] if match != "all" else df
-        df = df[df.set_size == set_size] if set_size != "all" else df
-
+        _ca1 = ca1.copy()
+        _ca1["subject"] = _ca1["sub"]
+        del _ca1["sub"]
+        swr_ca1 = mngs.pd.slice(swr, _ca1)
         for swr_type in CONFIG.RIPPLE.TYPES:
-            # vER, eSWR, rSWR
-            vER = np.vstack(df["vER"])
-            assert np.unique(vER, axis=0).shape[0] == 1
-            vER = vER[0]
-            df_eSWR = df[(df["swr_type"] == swr_type) & (df.phase == "Encoding")]
-            df_rSWR = df[(df["swr_type"] == swr_type) & (df.phase == "Retrieval")]
-
-            if df_eSWR.empty or df_rSWR.empty:
+            vectors = get_eSWR_rSWR_vER(swr_ca1, swr_type, SWR_dir_def)
+            if vectors is not None:
                 for comparison in COMPARISONS:
-                    key = f"{swr_type}_{comparison}"
-                    data[key] = [np.nan]
+                    v1_str, v2_str = comparison.split("_vs_")
+                    v1, v2 = vectors[v1_str], vectors[v2_str]
+                    key = comparison.replace("SWR", swr_type)
+                    data[key].append(calc_measure(v1, v2, measure))
             else:
-                vs = {
-                    "eSWR": np.vstack(df_eSWR[f"vSWR_def{SWR_direction_def}"]),
-                    "rSWR": np.vstack(df_rSWR[f"vSWR_def{SWR_direction_def}"]),
-                    "vER": vER[np.newaxis, :],
-                }
+                data[key].append([np.nan])
 
-                for comparison in COMPARISONS:
-                    v1_str = comparison.split("_")[0]
-                    v2_str = comparison.split("_")[-1]
+    for k,v in data.items():
+        data[k] = np.hstack(v)
 
-                    v1 = vs[v1_str]
-                    v2 = vs[v2_str]
-
-                    all_combinations = False if v1_str == "vER" else True
-
-                    key = f"{comparison}".replace("SWR", swr_type)
-                    data[key] = calc_measure(v1, v2, measure, all_combinations)
-
-    return mngs.pd.force_df(data)
+    df = mngs.pd.force_df(data)
+    return df
 
 
-def plot_first_two_rows(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
+def plot_first_two_rows(dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES):
+
     for col, match in enumerate(MATCHES):
         df = dfs[match]
-
         match_str = CONFIG.MATCHES_STR[str(match)]
 
         for i_swr_type, swr_type in enumerate(SWR_TYPES[:-1]):
@@ -125,12 +147,9 @@ def plot_first_two_rows(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
             ax.set_xlim(*XLIM[measure])
 
             for i_comparison, comparison in enumerate(COMPARISONS):
-                key = f"{comparison}".replace("SWR", swr_type)
-                data = df[key]
-                data = data.values.flatten()
+                key = comparison.replace("SWR", swr_type)
+                data = np.array(df[key])
                 data = data[~np.isnan(data)]
-
-                # print(len(data)) # Some kde is plotted in small samples
 
                 try:
                     ax.kde(
@@ -140,23 +159,51 @@ def plot_first_two_rows(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
                         color=CC[CONFIG.COLORS[comparison]],
                         xlim=XLIM[measure],
                     )
-                    _ax.boxplot_(
+                    _ax.boxplot(
                         data,
                         label=key,
                         id=f"{match_str}-{set_size}-{key}",
                         positions=[i_comparison],
-                        # c=CC[CONFIG.COLORS[comparison]],
                     )
                 except Exception as e:
-                    pass
-                    # logging.warn(e)
+                    print(e)
+
 
             ax.legend()
             _ax.set_xyt(COMPARISONS, None, None)
     return fig, axes, _fig, _axes
 
 
-def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
+def calc_kde_diff(plotted, match_str, comparison, set_size, SWR_TYPES):
+    x_p = plotted[
+        mngs.gen.search(
+            rf"{match_str}-{set_size}-{comparison.replace('SWR', 'SWR\+')}_kde_x",
+            plotted.columns,
+        )[1]
+    ]
+    kde_p = plotted[
+        mngs.gen.search(
+            rf"{match_str}-{set_size}-{comparison.replace('SWR', 'SWR\+')}_kde_kde",
+            plotted.columns,
+        )[1]
+    ]
+    x_m = plotted[
+        mngs.gen.search(
+            rf"{match_str}-{set_size}-{comparison.replace('SWR', 'SWR\-')}_kde_x",
+            plotted.columns,
+        )[1]
+    ]
+    kde_m = plotted[
+        mngs.gen.search(
+            rf"{match_str}-{set_size}-{comparison.replace('SWR', 'SWR\-')}_kde_kde",
+            plotted.columns,
+        )[1]
+    ]
+    kde_diff = np.array(kde_p) - np.array(kde_m)
+    assert (np.array(x_p) == np.array(x_m)).all()
+    return x_p, kde_diff
+
+def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES):
     # Difference plot
     plotted = axes.to_sigma()
 
@@ -164,7 +211,6 @@ def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
         df = dfs[match]
         match_str = CONFIG.MATCHES_STR[str(match)]
 
-        # for _, swr_type in enumerate(SWR_TYPES[-1:]):
         i_swr_type, swr_type = len(SWR_TYPES)-1, SWR_TYPES[-1]
         i_ax = i_swr_type, i_match
         ax, _ax = axes[i_ax], _axes[i_ax]
@@ -173,49 +219,25 @@ def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
         ax.set_title(f"{match_str} - {swr_type}")
 
         for i_comparison, comparison in enumerate(COMPARISONS):
+            xx, kde_diff = calc_kde_diff(plotted, match_str, comparison, set_size, SWR_TYPES)
 
-            __import__("ipdb").set_trace()
+            if kde_diff.any():
+                n = (~np.isnan(xx)).sum()
+                ax.plot_(
+                    np.hstack(np.array(xx)),
+                    np.hstack(kde_diff),
+                    label=f"{comparison} (n={n})",
+                    id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
+                    color=CC[CONFIG.COLORS[f"{comparison}"]],
+                    n=n,
+                )
 
-            x_p = plotted[
-                mngs.gen.search(
-                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[0]}_kde_x",
-                    plotted.columns,
-                )[1]
-            ]
-            kde_p = plotted[
-                mngs.gen.search(
-                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[0]}_kde_kde",
-                    plotted.columns,
-                )[1]
-            ]
-            x_m = plotted[
-                mngs.gen.search(
-                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[1]}_kde_x",
-                    plotted.columns,
-                )[1]
-            ]
-            kde_m = plotted[
-                mngs.gen.search(
-                    rf"{match_str}-{comparison}-{set_size}-{SWR_TYPES[1]}_kde_kde",
-                    plotted.columns,
-                )[1]
-            ]
-            kde_diff = np.array(kde_p) - np.array(kde_m)
-
-            ax.plot(
-                np.hstack(np.array(x_p)),
-                np.hstack(kde_diff),
-                label=f"{comparison}",
-                id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
-                color=CC[CONFIG.COLORS[f"{comparison}"]],
-            )
-
-            _ax.boxplot(
-                np.hstack(kde_diff),
-                label=f"{comparison}",
-                id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
-                positions=[i_comparison],
-            )
+                _ax.boxplot(
+                    np.hstack(kde_diff),
+                    label=f"{comparison}",
+                    id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
+                    positions=[i_comparison],
+                )
 
         ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
         ax.set_xlim(*XLIM[measure])
@@ -227,7 +249,7 @@ def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES):
 
 
 def main(
-    SWR_direction_def=1, set_size=4, measure="cosine"
+    SWR_dir_def=1, set_size=4, measure="cosine"
 ):
     MATCHES = ["all"] + CONFIG.MATCHES
     SWR_TYPES = CONFIG.RIPPLE.TYPES + ["Diff (SWR+ - SWR-)"]
@@ -239,7 +261,7 @@ def main(
 
     dfs = {
         match: process_comparisons(
-            swr_all, match, set_size, SWR_direction_def, measure
+            swr_all, match, set_size, SWR_dir_def, measure
         )
         for match in MATCHES
     }
@@ -263,23 +285,23 @@ def main(
 
     # Storing KDE data as well
     fig, axes, _fig, _axes = plot_first_two_rows(
-        dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES
+        dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES
     )
     # Takes difference between the KDE data
-    fig, axes, _fig, _axes = plot_first_two_rows(
-        dfs, fig, axes, _fig, _axes, MATCHES, SWR_TYPES
+    fig, axes, _fig, _axes = plot_last_row(
+        dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES
     )
 
     # Saving
-    spath = f"./kde_vSWR_def{SWR_direction_def}/{measure}/set_size_{set_size}.jpg"
+    spath = f"./kde_vSWR_def{SWR_dir_def}/{measure}/set_size_{set_size}.jpg"
 
     if measure == "cosine":
         xlabel = (
-            f"{measure} (vSWR def. {SWR_direction_def}) (dissimilar <---> similar)",
+            f"{measure} (vSWR def. {SWR_dir_def}) (dissimilar <---> similar)",
         )
     else:
         xlabel = (
-            f"{measure} (vSWR def. {SWR_direction_def}) (similar <---> dissimilar)",
+            f"{measure} (vSWR def. {SWR_dir_def}) (similar <---> dissimilar)",
         )
     fig.supxyt(
         xlabel,
@@ -317,9 +339,9 @@ if __name__ == "__main__":
     )
     for measure in ["cosine", "radian"]:
         for set_size in ["all"] + CONFIG.SET_SIZES:
-            for SWR_direction_def in [1, 2]:
+            for SWR_dir_def in [1, 2]:
                 main(
-                    SWR_direction_def=SWR_direction_def,
+                    SWR_dir_def=SWR_dir_def,
                     set_size=set_size,
                     measure=measure,
                 )

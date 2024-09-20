@@ -1,26 +1,31 @@
-To calculate the speed of a trajectory in 3D space:
+- v1, v2
+    - eSWR+, rSWR+
+    - eSWR+, ER
+    - rSWR+, ER
+    - eSWR-, rSWR-
+    - eSWR-, ER
+    - rSWR-, ER
 
-1. Calculate the displacement between consecutive points:
-   Δx = x2 - x1
-   Δy = y2 - y1
-   Δz = z2 - z1
+| Null Hypothesis                             | Statistical Test                                           |
+|---------------------------------------------|------------------------------------------------------------|
+| No difference between v1 and v2 directions  | cos(v1, v2) vs. uniform distribution                       |
+| No difference between SWR+ and SWR-         | cos(v1, v2) for SWR+ vs. cos(v1, v2) for SWR-              |
+| No set size dependency                      | cos(v1, v2) for set sizes 4, 6, and 8                      |
+|                                             | Correlation analysis with shuffled set sizes               |
+| No task dependency                          | cos(v1, v2) for Match IN vs. cos(v1, v2) for Mismatch OUT  |
 
-2. Calculate the distance using the Euclidean formula:
-   distance = sqrt(Δx^2 + Δy^2 + Δz^2)
 
-3. Divide the distance by the time interval between points:
-   speed = distance / Δt
 
-Here's a Python implementation:
+| Null Hypothesis                             | Statistical Test                                           | File Name (.py)           |
+|---------------------------------------------|------------------------------------------------------------|---------------------------|
+| No difference between v1 and v2 directions  | cos(v1, v2) vs. uniform distribution                       | vector_direction_test.py  |
+| No difference between SWR+ and SWR-         | cos(v1, v2) for SWR+ vs. cos(v1, v2) for SWR-              | swr_comparison.py         |
+| No set size dependency                      | cos(v1, v2) for set sizes 4, 6, and 8                      | set_size_analysis.py      |
+|                                             | Correlation analysis with shuffled set sizes               | set_size_correlation.py   |
+| No task dependency                          | cos(v1, v2) for Match IN vs. cos(v1, v2) for Mismatch OUT  | task_dependency_test.py   |
 
-```python
-import numpy as np
 
-def calculate_speed(trajectory, timestamps):
-    displacements = np.diff(trajectory, axis=0)
-    distances = np.linalg.norm(displacements, axis=1)
-    time_intervals = np.diff(timestamps)
-    speeds = distances / time_intervals
-    return speeds
 
-```
+
+filenames=(vector_direction_test.py swr_comparison.py set_size_analysis.py set_size_correlation.py task_dependency_test.py )
+for f in "${filenames[@]}"; do touch $f; done
