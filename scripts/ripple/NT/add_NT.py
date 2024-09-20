@@ -1,9 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-15 13:25:49 (ywatanabe)"
+# Time-stamp: "2024-09-21 08:17:36 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
-"""This script associates SWR data with neural trajectory."""
+"""
+Associates SWR data with neural trajectory (NT) and adds relevant information.
+
+Key operations:
+1. Adds NT during SWR to the SWR dataframe
+2. Adds phase of SWR
+3. Associates vector of geometric medians from encoding to retrieval
+4. Defines two types of SWR directions:
+   a. NT direction from start to end of mid-SWR
+   b. NT direction of the jump (to peak direction from the average of +/- 50 ms NT coordinates) during mid-SWR
+5. Calculates radians between SWR vectors and encoding-retrieval vector
+
+Processes both RIPPLE and RIPPLE_MINUS data for specified CA1 regions.
+"""
 
 """Imports"""
 import sys
@@ -16,6 +29,7 @@ import numpy as np
 
 
 def find_peak_i(swr):
+    """Finds the peak index for each SWR."""
     NT_TIME = eval(CONFIG.NT.TIME_AXIS)
     swr["peak_i"] = swr["peak_s"].apply(
         lambda x: mngs.gen.find_closest(NT_TIME, x)[1]
@@ -24,7 +38,7 @@ def find_peak_i(swr):
 
 
 def add_NT(swr):
-    """Add Neural Trajectory (NT) data to the DataFrame."""
+    """Adds Neural Trajectory (NT) data to the DataFrame."""
 
     def _load_nt(row):
         return mngs.io.load(
@@ -64,6 +78,7 @@ def add_NT(swr):
 
 
 def add_phase(swr):
+    """Adds SWR phase information to the DataFrame."""
     swr["phase"] = str(np.nan)
     for phase, phase_data in CONFIG.PHASES.items():
         indi_phase = (phase_data.start <= swr.peak_i) * (
@@ -74,18 +89,16 @@ def add_phase(swr):
 
 
 def add_vER(SWR, ca1):
-    # Loading
+    """Adds encoding-retrieval vector to the DataFrame."""
     GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
-
-    # Main
     SWR["vER"] = [
         np.array(GS["Retrieval"] - GS["Encoding"]) for _ in range(len(SWR))
     ]
-
     return SWR
 
 
 def add_vSWR_mid_start_to_mid_end(SWR):
+    """Adds SWR direction definition 1 (NT) to the DataFrame."""
     nt_swr = np.stack(SWR.NT, axis=0)
     start, end = nt_swr.shape[-1] // 2 + np.array(CONFIG.RIPPLE.BINS.mid)
     vSWR = nt_swr[..., end] - nt_swr[..., start]
@@ -97,6 +110,7 @@ add_vSWR_def1 = add_vSWR_mid_start_to_mid_end
 
 
 def add_vSWR_base_to_peak(SWR):
+    """Adds SWR direction definition 2 (base to peak) to the DataFrame."""
     nt_swr = np.stack(SWR.NT, axis=0)
 
     # Indices

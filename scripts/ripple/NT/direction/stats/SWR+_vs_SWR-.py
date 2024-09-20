@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-20 19:10:31 (ywatanabe)"
+# Time-stamp: "2024-09-21 08:20:13 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/stats/SWR+_vs_SWR-.py
 
 """This script compares the significance of (absolute) cosine similarity between SWR+ and SWR-."""
@@ -109,11 +109,9 @@ def main():
                         stats["vSWR_def"] = vSWR_def
                         stats["is_abs"] = str(take_abs)
                         stats_all.append(stats)
-                        # mngs.io.save(stats, f"{measure}_vSWR_def{vSWR_def}-match-{str(match)}-set_size-{set_size}.csv")
 
     stats_all = pd.concat(stats_all)
     mngs.io.save(stats_all, "stats_all.csv")
-
     mngs.io.save(stats_all[stats_all.p_value < 0.05], "stats_significant.csv")
 
 if __name__ == '__main__':
