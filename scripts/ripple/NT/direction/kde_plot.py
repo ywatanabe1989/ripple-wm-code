@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-19 21:15:48 (ywatanabe)"
+# Time-stamp: "2024-09-21 10:32:30 (ywatanabe)"
 # /ssh:ywatanabe@crest:/mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/kde_plot.py
+
 
 """
 This script calculate and visualize distributions of radian/cosine of vectors. All plotted data are saved not only as jpg and but as csv (data values), due to the mngs package. Note that statistical tests are not performed in this script but in the dedicated script named stats.py, using the data collected from this script.
@@ -68,28 +69,17 @@ def calc_measure(v1, v2, measure):
     elif measure == "radian":
         return calc_radian(v1, v2)
 
-# def calc_measure(v1, v2, measure, all_combinations):
-#     def calc_radian(v1, v2, all_combinations):
-#         result = 1 - cdist(v1, v2, metric="cosine")
-#         return np.arccos(result.reshape(-1) if all_combinations else result[:, 0])
-
-#     def calc_cosine(v1, v2, reshape):
-#         result = 1 - cdist(v1, v2, metric="cosine")
-#         return result.reshape(-1) if all_combinations else result[:, 0]
-
-#     if measure == "cosine":
-#         return calc_cosine(v1, v2, all_combinations)
-#     elif measure == "radian":
-#         return calc_radian(v1, v2, all_combinations)
-
-def get_eSWR_rSWR_vER(swr, swr_type, SWR_dir_def):
+def get_eSWR_rSWR_vER(swr, swr_type, vSWR_def):
     swr = swr[swr.swr_type == swr_type].copy()
+
+    # vER
     vER = np.vstack(swr["vER"])
     assert np.unique(vER, axis=0).shape[0] == 1
     vER = vER[0]
+
+    # eSWR / rSWR
     eSWR = swr[swr.phase == "Encoding"]
     rSWR = swr[swr.phase == "Retrieval"]
-
 
     if eSWR.empty:
         return None
@@ -98,14 +88,14 @@ def get_eSWR_rSWR_vER(swr, swr_type, SWR_dir_def):
         return None
 
     vectors = {
-        "eSWR": np.vstack(eSWR[f"vSWR_def{SWR_dir_def}"]),
-        "rSWR": np.vstack(rSWR[f"vSWR_def{SWR_dir_def}"]),
+        "eSWR": np.vstack(eSWR[vSWR_def]),
+        "rSWR": np.vstack(rSWR[vSWR_def]),
         "vER": vER[np.newaxis, :],
     }
     return vectors
 
 def process_comparisons(
-    swr_all, match, set_size, SWR_dir_def, measure
+    swr_all, match, set_size, vSWR_def, measure
 ):
     swr = swr_all[swr_all.match == match] if match != "all" else swr_all
     swr = swr[swr.set_size == set_size] if set_size != "all" else swr
@@ -117,13 +107,16 @@ def process_comparisons(
         del _ca1["sub"]
         swr_ca1 = mngs.pd.slice(swr, _ca1)
         for swr_type in CONFIG.RIPPLE.TYPES:
-            vectors = get_eSWR_rSWR_vER(swr_ca1, swr_type, SWR_dir_def)
+            vectors = get_eSWR_rSWR_vER(swr_ca1, swr_type, vSWR_def)
             if vectors is not None:
                 for comparison in COMPARISONS:
-                    v1_str, v2_str = comparison.split("_vs_")
-                    v1, v2 = vectors[v1_str], vectors[v2_str]
-                    key = comparison.replace("SWR", swr_type)
-                    data[key].append(calc_measure(v1, v2, measure))
+                    try:
+                        v1_str, v2_str = comparison.split("_vs_")
+                        v1, v2 = vectors[v1_str], vectors[v2_str]
+                        key = comparison.replace("SWR", swr_type)
+                        data[key].append(calc_measure(v1, v2, measure))
+                    except:
+                        __import__("ipdb").set_trace()
             else:
                 data[key].append([np.nan])
 
@@ -203,7 +196,7 @@ def calc_kde_diff(plotted, match_str, comparison, set_size, SWR_TYPES):
     assert (np.array(x_p) == np.array(x_m)).all()
     return x_p, kde_diff
 
-def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES):
+def plot_kde_diff(dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES):
     # Difference plot
     plotted = axes.to_sigma()
 
@@ -249,7 +242,7 @@ def plot_last_row(dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES):
 
 
 def main(
-    SWR_dir_def=1, set_size=4, measure="cosine"
+    vSWR_def="vSWR_NT", set_size=4, measure="cosine"
 ):
     MATCHES = ["all"] + CONFIG.MATCHES
     SWR_TYPES = CONFIG.RIPPLE.TYPES + ["Diff (SWR+ - SWR-)"]
@@ -261,7 +254,7 @@ def main(
 
     dfs = {
         match: process_comparisons(
-            swr_all, match, set_size, SWR_dir_def, measure
+            swr_all, match, set_size, vSWR_def, measure
         )
         for match in MATCHES
     }
@@ -288,21 +281,15 @@ def main(
         dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES
     )
     # Takes difference between the KDE data
-    fig, axes, _fig, _axes = plot_last_row(
+    fig, axes, _fig, _axes = plot_kde_diff(
         dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES
     )
 
     # Saving
-    spath = f"./kde_vSWR_def{SWR_dir_def}/{measure}/set_size_{set_size}.jpg"
+    spath = f"./kde_{vSWR_def}/{measure}/set_size_{set_size}.jpg"
 
-    if measure == "cosine":
-        xlabel = (
-            f"{measure} (vSWR def. {SWR_dir_def}) (dissimilar <---> similar)",
-        )
-    else:
-        xlabel = (
-            f"{measure} (vSWR def. {SWR_dir_def}) (similar <---> dissimilar)",
-        )
+    left, right = ("dissimilar", "similar") if measure == "cosine" else ("similar", "dissimilar")
+    xlabel = f"{measure} ({vSWR_def}) ({left} <---> {right})"
     fig.supxyt(
         xlabel,
         "KDE density",
@@ -339,9 +326,9 @@ if __name__ == "__main__":
     )
     for measure in ["cosine", "radian"]:
         for set_size in ["all"] + CONFIG.SET_SIZES:
-            for SWR_dir_def in [1, 2]:
+            for vSWR_def in CONFIG.RIPPLE.DIRECTIONS:
                 main(
-                    SWR_dir_def=SWR_dir_def,
+                    vSWR_def=vSWR_def,
                     set_size=set_size,
                     measure=measure,
                 )

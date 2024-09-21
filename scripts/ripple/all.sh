@@ -20,21 +20,33 @@ main() {
     echo "$0 starts."
 
     local scripts=(
+        # Detect and Define
         "./detect_and_define/detect_SWR_p.py"
         "./detect_and_define/define_SWR_m.py"
         "./detect_and_define/define_putative_CA1_using_UMAP.py"
+        
         "./plot_SWR_p.py"
+
+        # Stats
         "./stats/count.py"        
         "./stats/duration_amplitude.py"
         "./stats/time_course.py"
+
+        # NT
         "./NT/add_NT.py"
+
+        # Distance
         "./NT/distance/from_O_lineplot.py"        
         "./NT/distance/from_O_boxplot.py"
         "./NT/distance/stats.py"
+
+        # Direction
         "./NT/direction/kde_plot.py"
+        "./NT/direction/stats/vector_direction_test.py"
+        "./NT/direction/stats/SWR+_vs_SWR-.py"                        
 
         # Stats
-        "./NT/direction/stats/vector_direction_test.py "        
+        "./NT/direction/stats/vector_direction_test.py"        
         "./NT/direction/stats/SWR+_vs_SWR-.py
     )
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-20 12:14:24 (ywatanabe)"
+# Time-stamp: "2024-09-21 09:17:32 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/stats/vector_direction_test.py
 
 """This script compares the significance of (absolute) cosine similarity between eSWR, rSWR, and vER."""
@@ -45,21 +45,24 @@ def find_cols(df):
             labels[col] = comparison.replace('SWR\+', 'SWR+').replace("_vs_", " and ")
     return labels
 
-def perform_bm_test(df):
+def perform_bm_test(df, take_abs):
     labels = find_cols(df)
     results = []
     for col in labels.keys():
         data = df[col]
         data = np.array(data[~data.isna()])
         uniform = np.random.uniform(low=-1, high=1, size=len(data))
-        result = mngs.stats.brunner_munzel_test(np.abs(uniform), np.abs(data))
-        result["vectors to calculate absolute cosine value"] = labels[col]
+        if take_abs:
+            data = np.abs(data)
+            uniform = np.abs(uniform)
+        result = mngs.stats.brunner_munzel_test(uniform, data)
+        result["vectors"] = labels[col]
         results.append(result)
     results = pd.DataFrame(results)
     results["stars"] = results["p_value"].apply(mngs.stats.p2stars)
     print(results)
 
-    mngs.io.save(results, "stats.csv")
+    # mngs.io.save(results, "stats.csv")
     """
        w_statistic  p_value        dof  effsize vectors to calculate absolute cosine value stars
     0       21.929      0.0  33098.106    0.567                            eSWR+ and rSWR+   ***
@@ -75,11 +78,23 @@ def perform_bm_test(df):
     baseline is e/rSWR-
     """
 
-def main():
-    lpath = f"./scripts/ripple/NT/direction/kde_plot/kde_vSWR_def1/cosine/set_size_all_box.csv"
-    df = mngs.io.load(lpath)
-    perform_bm_test(df)
+    return results
 
+def main():
+    stats_all = []
+    for vSWR_def in CONFIG.RIPPLE.DIRECTIONS:
+        for take_abs in [True, False]:
+            mngs.gen.print_block(
+                f"{vSWR_def} - abs: {take_abs}"
+            )
+            lpath = f"./scripts/ripple/NT/direction/kde_plot/kde_{vSWR_def}/cosine/set_size_all_box.csv"
+            df = mngs.io.load(lpath)
+            stats = perform_bm_test(df, take_abs)
+            stats["vSWR_def"] = vSWR_def
+            stats["is_abs"] = take_abs
+            stats_all.append(stats)
+    stats_all = pd.concat(stats_all)
+    mngs.io.save(stats_all, "stats_all.csv")
 
 if __name__ == '__main__':
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(sys, plt, verbose=False, agg=True)

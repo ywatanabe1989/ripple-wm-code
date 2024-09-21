@@ -24,9 +24,9 @@ RIPPLE:
     post:
       [6, 17]
       
-  DIRECTION:
-    NT
-    JUMP
+  DIRECTIONS:
+    - vSWR_NT
+    - vSWR_JUMP
 
 # RIPPLE_LOW_HZ:
 #   80

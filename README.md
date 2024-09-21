@@ -17,8 +17,10 @@
 ./scripts/NT/all.sh
 ./scripts/ripple/all.sh
 
+./scripts/ripple/NT/direction/kde_plot.py
 ./scripts/ripple/NT/direction/stats/vector_direction_test.py
 ./scripts/ripple/NT/direction/stats/SWR+_vs_SWR-.py
+./scripts/ripple/NT/direction/stats/
 
 ./scripts/memory_load/all.sh
 ```

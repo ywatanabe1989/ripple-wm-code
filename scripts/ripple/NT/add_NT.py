@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-21 08:17:36 (ywatanabe)"
+# Time-stamp: "2024-09-21 09:11:01 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
 """
@@ -97,19 +97,16 @@ def add_vER(SWR, ca1):
     return SWR
 
 
-def add_vSWR_mid_start_to_mid_end(SWR):
+def add_vSWR_NT(SWR):
     """Adds SWR direction definition 1 (NT) to the DataFrame."""
     nt_swr = np.stack(SWR.NT, axis=0)
     start, end = nt_swr.shape[-1] // 2 + np.array(CONFIG.RIPPLE.BINS.mid)
     vSWR = nt_swr[..., end] - nt_swr[..., start]
-    SWR["vSWR_def1"] = [vSWR[ii] for ii in range(len(vSWR))]
+    SWR["vSWR_NT"] = [vSWR[ii] for ii in range(len(vSWR))]
     return SWR
 
 
-add_vSWR_def1 = add_vSWR_mid_start_to_mid_end
-
-
-def add_vSWR_base_to_peak(SWR):
+def add_vSWR_JUMP(SWR):
     """Adds SWR direction definition 2 (base to peak) to the DataFrame."""
     nt_swr = np.stack(SWR.NT, axis=0)
 
@@ -122,28 +119,24 @@ def add_vSWR_base_to_peak(SWR):
     coord_peak = nt_swr[..., mid]
     vSWR = coord_peak - coord_base
 
-    SWR["vSWR_def2"] = [vSWR[ii] for ii in range(len(vSWR))]
+    SWR["vSWR_JUMP"] = [vSWR[ii] for ii in range(len(vSWR))]
 
     return SWR
 
-
-add_vSWR_def2 = add_vSWR_base_to_peak
-
-
-def add_radian_def1(SWR):
-    SWR["radian_def1"] = [
+def add_radian_NT(SWR):
+    SWR["radian_NT"] = [
         np.arccos(
-            mngs.linalg.cosine(SWR["vSWR_def1"].iloc[ii], SWR["vER"].iloc[ii])
+            mngs.linalg.cosine(SWR["vSWR_NT"].iloc[ii], SWR["vER"].iloc[ii])
         )
         for ii in range(len(SWR))
     ]
     return SWR
 
 
-def add_radian_def2(SWR):
-    SWR["radian_def2"] = [
+def add_radian_peak(SWR):
+    SWR["radian_peak"] = [
         np.arccos(
-            mngs.linalg.cosine(SWR["vSWR_def2"].iloc[ii], SWR["vER"].iloc[ii])
+            mngs.linalg.cosine(SWR["vSWR_JUMP"].iloc[ii], SWR["vER"].iloc[ii])
         )
         for ii in range(len(SWR))
     ]
@@ -165,10 +158,10 @@ def main():
             swr = add_NT(swr)
             swr = add_phase(swr)
             swr = add_vER(swr, ca1)
-            swr = add_vSWR_def1(swr)
-            swr = add_vSWR_def2(swr)
-            swr = add_radian_def1(swr)
-            swr = add_radian_def2(swr)
+            swr = add_vSWR_NT(swr)
+            swr = add_vSWR_JUMP(swr)
+            swr = add_radian_NT(swr)
+            swr = add_radian_peak(swr)
 
             # Saving
             mngs.io.save(
