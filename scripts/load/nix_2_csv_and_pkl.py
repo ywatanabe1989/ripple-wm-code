@@ -1,27 +1,25 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: 2024-05-27 17:07:27
-# load_nix_and_save_as_csv_and_pkl.py
+# /mnt/ssd/ripple-wm-code/scripts/load/nix_2_csv_and_pkl.py
 
 """
 This script loads .h5 files downloaded by the publicly available repository:
 https://gin.g-node.org/USZ_NCH/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM
 
-Then, saves the following under CONFIG["SESSION_DIR"]:
+Then, saves the following files under CONFIG.SESSION.DIR:
     meta.csv
     trials_info.csv
     iEEG_{ROI}.pkl
     EEG.pkl
     spike_times_{ROI}.pkl
 
-This source code is based on the provided matlab script:
+This source code is based on the matlab script provided by the authors of the dataset:
 https://gin.g-node.org/USZ_NCH/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM/src/master/code_MATLAB/Load_Data_Example_Script.m
 """
 
 
-"""
-Imports
-"""
+"""Imports"""
 import re
 import sys
 from glob import glob
@@ -32,47 +30,47 @@ import mngs
 import numpy as np
 import pandas as pd
 import xarray
+import logging
 
-"""
-Config
-"""
+"""Config"""
 CONFIG = mngs.gen.load_configs()
 
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
 def main():
     fpaths = glob("./data/data_nix/*.h5")
     for iEEG_ROI in ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]:
-        # iEEG_ROI_STR = mngs.general.connect_strs(iEEG_ROI)
         for fpath in fpaths:
 
-            # session
+            # Session
             f = h5py.File(fpath, "r+")
 
-            meta_df, trials_info, iEEG, EEG, spike_times = load_h5(f, iEEG_ROI)
+            try:
+                meta_df, trials_info, iEEG, EEG, spike_times = load_h5(
+                    f, iEEG_ROI
+                )
+                # Saves
+                sub = re.findall("Subject_[\0-9]{2}", fpath)[0][-2:]
+                session = re.findall("Session_[\0-9]{2}", fpath)[0][-2:]
+                session_dir = eval(CONFIG.DIR.SESSION)
 
-            # Saves
-            sub = re.findall("Subject_[\0-9]{2}", fpath)[0][-2:]
-            session = re.findall("Session_[\0-9]{2}", fpath)[0][-2:]
-            session_dir = eval(CONFIG["DIR_SESSION"])
+                for obj, spath in [
+                    (meta_df, f"meta.csv"),
+                    (trials_info, f"trials_info.csv"),
+                    (iEEG, f"iEEG/{iEEG_ROI}.pkl"),
+                    (EEG, f"EEG.pkl"),
+                    (spike_times, f"spike_times/{iEEG_ROI}.pkl"),
+                ]:
+                    mngs.io.save(obj, session_dir + spath, from_cwd=True)
 
-            mngs.io.save(meta_df, session_dir + f"meta.csv", from_cwd=True)
-            mngs.io.save(
-                trials_info, session_dir + f"trials_info.csv", from_cwd=True
-            )
-            mngs.io.save(
-                iEEG, session_dir + f"iEEG/{iEEG_ROI}.pkl", from_cwd=True
-            )
-            mngs.io.save(EEG, session_dir + f"EEG.pkl", from_cwd=True)
-            mngs.io.save(
-                spike_times,
-                session_dir + f"spike_times/{iEEG_ROI}.pkl",
-                from_cwd=True,
-            )
+            except Exception as e:
+                logging.warning(
+                    str(e)
+                    + f"\nh5 data was not properly loaded: Subject {sub}, "
+                    f"Session {session}, ROI {iEEG_ROI}"
+                )
 
 
 def load_h5(f, iEEG_ROI):
@@ -213,11 +211,6 @@ def get_trials_info(f):
 
 def get_signals(f, iEEG_ROI=["PHL", "PHR"]):
     def _in_get_signals_trial(f, trial_number=1):
-
-        # Scalp EEG and iEEG data were resampled at 200 Hz and 2kHz, respectively.
-        SAMP_RATE_iEEG = 2000
-        SAMP_RATE_EEG = 200
-
         # iEEG
         iEEG = np.array(
             f["data"][list(f["data"].keys())[0]]["data_arrays"][
@@ -246,10 +239,8 @@ def get_signals(f, iEEG_ROI=["PHL", "PHR"]):
         EEG_labels = [l.decode("ascii") for l in EEG_labels]
         # volt unit
 
-        # iEEG_sec = iEEG.shape[1] / SAMP_RATE_iEEG
-        # EEG_sec = EEG.shape[1] / SAMP_RATE_EEG
-        iEEG_sec = iEEG.shape[1] / CONFIG["FS_iEEG"]
-        EEG_sec = EEG.shape[1] / CONFIG["FS_EEG"]
+        iEEG_sec = iEEG.shape[1] / CONFIG.FS.iEEG
+        EEG_sec = EEG.shape[1] / CONFIG.FS.EEG
 
         assert iEEG_sec == EEG_sec
 
@@ -258,7 +249,7 @@ def get_signals(f, iEEG_ROI=["PHL", "PHR"]):
 
         iEEG = iEEG[
             mngs.general.search(iEEG_ROI, list(iEEG.index), as_bool=True)[0]
-        ]
+        ]  # Error in Subject 05, Session 02, AHR
 
         # spike times
         keys_list = [
@@ -277,7 +268,7 @@ def get_signals(f, iEEG_ROI=["PHL", "PHR"]):
                     "data"
                 ]
             )
-        st_df = mngs.general.force_dataframe(st_dict)
+        st_df = mngs.pd.force_df(st_dict)
 
         # # spike waveforms
         # sf_keys = mngs.general.search("^Spike_Waveform_",
@@ -340,14 +331,6 @@ def get_signals(f, iEEG_ROI=["PHL", "PHR"]):
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False
     )

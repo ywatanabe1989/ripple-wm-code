@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:42:31 (ywatanabe)"
+# Time-stamp: "2024-09-24 02:03:01 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -45,28 +45,14 @@ def calc_dist(traj_MTL_region):
         norm_nonnan_MTL_region[i_bin] = norm_MTL_region_i_bin
     return mngs.pd.force_df(norm_nonnan_MTL_region)
 
-
-def calc_mean_and_ci(dist):
-    dist_mm = np.nanmean(dist, axis=0)
-    dist_sd = np.nanstd(dist, axis=0)
-    dist_nn = (~np.isnan(dist)).astype(int).sum(axis=0)
-    dist_ci = 1.96 * dist_mm / (dist_sd * dist_nn)
-    return dist_mm, dist_ci
-
-
-def plot_line(dist):
-    mm_ci = {k: calc_mean_and_ci(v) for k, v in dist.items()}
-
-    xx = np.linspace(
-        0,
-        CONFIG.TRIAL.DUR_SEC,
-        int(CONFIG.TRIAL.DUR_SEC / CONFIG.GPFA.BIN_SIZE_MS * 1e3),
-    )
+def plot_line(dist_dict):
+    xx = eval(CONFIG.NT.TIME_AXIS)
     fig, ax = mngs.plt.subplots()
-    [
-        ax.plot_with_ci(xx, mm_ci[k][0], mm_ci[k][1], label=k, id=k)
-        for k, v in mm_ci.items()
-    ]
+
+    for roi, dist in dist_dict.items():
+        described = mngs.gen.describe(dist_dict[roi], method="mean_ci")
+        ax.plot_(xx=xx, **described, label=roi, id=roi)
+    ax.legend()
     return fig
 
 
@@ -97,25 +83,13 @@ def main():
     # Distance from O
     dist = {k: calc_dist(v) for k, v in traj.items()}
 
+    # Line plot
     fig = plot_line(dist)
-    mngs.io.save(
-        fig, "./data/NT/distance/from_O_of_MTL_regions_line.jpg", from_cwd=True
-    )
-    mngs.io.save(
-        fig.to_sigma(),
-        "./data/NT/distance/from_O_of_MTL_regions_line.csv",
-        from_cwd=True,
-    )
+    mngs.io.save(fig, "line.jpg")
 
+    # Box plot
     fig = plot_box(dist)
-    mngs.io.save(
-        fig, "./data/NT/distance/from_O_of_MTL_regions_box.jpg", from_cwd=True
-    )
-    mngs.io.save(
-        fig.to_sigma(),
-        "./data/NT/distance/from_O_of_MTL_regions_box.csv",
-        from_cwd=True,
-    )
+    mngs.io.save(fig, "box.jpg")
 
 
 if __name__ == "__main__":

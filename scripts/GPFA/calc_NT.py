@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:22:37 (ywatanabe)"
+# Time-stamp: "2024-09-24 01:01:30 (ywatanabe)"
 # calc_NT_with_GPFA.py
 
 
@@ -9,7 +9,6 @@
 
 """Imports"""
 import logging
-import re
 import sys
 from glob import glob
 
@@ -19,7 +18,6 @@ import neo
 import numpy as np
 import quantities as pq
 from elephant.gpfa import GPFA
-from natsort import natsorted
 from utils import parse_lpath
 
 """Config"""
@@ -105,7 +103,7 @@ def main(match="all", without_retrieval_phase=False):
             mngs.io.save(NTs, spath_NTs, from_cwd=True)
 
         except Exception as e:
-            logging.warn(
+            logging.warning(
                 f"\nError raised during GPFA calculation. Spike_trains might be unavailable. "
                 f"Skipping {spath_NTs}.:\n",
                 e,

@@ -13,6 +13,7 @@ COLORS:
   rSWR_vs_vER: "brown"  
   eSWR_vs_rSWR: "pink"
   eSWR_vs_eSWR: "blue"
-  rSWR_vs_rSWR: "red"    
+  rSWR_vs_rSWR: "red"
+  rSWR_vs_vOR: "orange"    
 
       

@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:19:56 (ywatanabe)"
+# Time-stamp: "2024-09-24 01:31:19 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """
@@ -306,12 +306,12 @@ def format_gs(GS):
 
 def main():
     # Params ----------------------------------------
-    CONFIG.N_REPEAT = 100
-    CONFIG.N_CV = 10
-    # CONFIG.N_REPEAT = 2
-    # CONFIG.N_CV = 2
+    # CONFIG.N_REPEAT = 100
+    # CONFIG.N_CV = 10
+    CONFIG.N_REPEAT = 2
+    CONFIG.N_CV = 2
     CONFIG.PHASES_TASK = PHASES_TASKS
-    CONFIG.SPATH_PREFFIX = f"./data/CA1/svc/{'_'.join(CONFIG.PHASES_TASK)}/"
+    CONFIG.SPATH_PREFFIX = f"./{'_'.join(CONFIG.PHASES_TASK)}/"
 
     # Calculation ----------------------------------------
     metrics_all = []
@@ -352,7 +352,7 @@ def main():
     mngs.io.save(
         metrics_all,
         CONFIG.SPATH_PREFFIX + f"metrics_all.csv",
-        from_cwd=True,
+        from_cwd=False,
     )
 
     # weights and biases
@@ -367,7 +367,7 @@ def main():
     mngs.io.save(
         weights_and_biases,
         CONFIG.SPATH_PREFFIX + "weights_and_biases.pkl",
-        from_cwd=True,
+        from_cwd=False,
     )
 
     # Confusioon Matrices
@@ -381,17 +381,17 @@ def main():
             mngs.io.save(
                 fig,
                 CONFIG.SPATH_PREFFIX + f"conf_mat/figs/{string}.jpg",
-                from_cwd=True,
+                from_cwd=False,
             )
             mngs.io.save(
                 cm,
                 CONFIG.SPATH_PREFFIX + f"conf_mat/csv/{string}.csv",
-                from_cwd=True,
+                from_cwd=False,
             )
             mngs.io.save(
                 mngs.pd.to_xyz(cm),
                 CONFIG.SPATH_PREFFIX + f"conf_mat/csv/xyz/{string}_xyz.csv",
-                from_cwd=True,
+                from_cwd=False,
             )
 
             plt.close()

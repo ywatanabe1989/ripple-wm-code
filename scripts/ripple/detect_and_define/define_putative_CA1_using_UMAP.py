@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-12 05:01:00 (ywatanabe)"
+# Time-stamp: "2024-09-21 19:21:03 (ywatanabe)"
 # ./scripts/ripple/detect_and_define/define_putative_CA1_using_UMAP.py
 
 

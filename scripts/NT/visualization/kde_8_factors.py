@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:36:08 (ywatanabe)"
+# Time-stamp: "2024-09-24 01:28:06 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/kde.py
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-21 10:32:30 (ywatanabe)"
+# Time-stamp: "2024-09-21 20:02:52 (ywatanabe)"
 # /ssh:ywatanabe@crest:/mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/kde_plot.py
 
 
@@ -52,6 +52,7 @@ COMPARISONS = [
     "eSWR_vs_rSWR",
     "eSWR_vs_vER",
     "rSWR_vs_vER",
+    "rSWR_vs_vOR",
 ]
 
 
@@ -77,6 +78,11 @@ def get_eSWR_rSWR_vER(swr, swr_type, vSWR_def):
     assert np.unique(vER, axis=0).shape[0] == 1
     vER = vER[0]
 
+    # vOR
+    vOR = np.vstack(swr["vOR"])
+    assert np.unique(vOR, axis=0).shape[0] == 1
+    vOR = vOR[0]
+
     # eSWR / rSWR
     eSWR = swr[swr.phase == "Encoding"]
     rSWR = swr[swr.phase == "Retrieval"]
@@ -91,6 +97,7 @@ def get_eSWR_rSWR_vER(swr, swr_type, vSWR_def):
         "eSWR": np.vstack(eSWR[vSWR_def]),
         "rSWR": np.vstack(rSWR[vSWR_def]),
         "vER": vER[np.newaxis, :],
+        "vOR": vOR[np.newaxis, :],
     }
     return vectors
 

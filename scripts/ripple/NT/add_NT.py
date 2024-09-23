@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-21 09:11:01 (ywatanabe)"
+# Time-stamp: "2024-09-21 19:44:10 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/NT/adds_NT.py
 
 """
@@ -96,6 +96,14 @@ def add_vER(SWR, ca1):
     ]
     return SWR
 
+def add_vOR(SWR, ca1):
+    """Adds origin-retrieval vector to the DataFrame."""
+    GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
+    SWR["vOR"] = [
+        np.array(GS["Retrieval"] - 0) for _ in range(len(SWR))
+    ]
+    return SWR
+
 
 def add_vSWR_NT(SWR):
     """Adds SWR direction definition 1 (NT) to the DataFrame."""
@@ -158,6 +166,7 @@ def main():
             swr = add_NT(swr)
             swr = add_phase(swr)
             swr = add_vER(swr, ca1)
+            swr = add_vOR(swr, ca1)
             swr = add_vSWR_NT(swr)
             swr = add_vSWR_JUMP(swr)
             swr = add_radian_NT(swr)

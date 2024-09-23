@@ -1,4 +1,3 @@
-
 # Jenkins Setup and Usage
 
 ## Installation
@@ -25,17 +24,54 @@ start-jenkins-dnf() {
 }
 ```
 
+## Port
+``` bash
+# sudo EDITOR=emacs systemctl edit jenkins
+# 3. Add these lines in the editor:
+
+# [Service]
+# Environment="JENKINS_PORT=5555"
+# ExecStart=
+# ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /usr/share/java/jenkins.war --httpPort=${JENKINS_PORT}
+
+sudo systemctl daemon-reload
+sudo systemctl restart jenkins
+sudo lsof -i :5555
+# http://127.0.0.1:5555
+```
+
+## Initial setup on the browser
+
+``` bash
+# Password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+To run a job based on a Jenkinsfile:
+
+1. In Jenkins, click "New Item"
+2. Enter a name for your job and select "Pipeline"
+3. In the job configuration, scroll to the "Pipeline" section
+4. Choose "Pipeline script from SCM" in the "Definition" dropdown
+5. Select your SCM (e.g., Git)
+6. Enter your repository URL
+7. Specify the branch containing your Jenkinsfile
+8. Set the "Script Path" to the location of your Jenkinsfile (default: "Jenkinsfile")
+in my case, `.jenkins/Jenkinsfile`??
+9. Save the configuration
+10. Run the job by clicking "Build Now"
+
+Jenkins will fetch the Jenkinsfile from your repository and execute the defined pipeline.
+
 ## Structure
 project-root/
 ├── .jenkins/
 │   ├── Jenkinsfile
-│   ├── scripts/
-│   │   ├── build.sh
-│   │   └── test.sh
 │   └── config/
 │       └── checkstyle.xml
-├── src/
-├── tests/
+├── scripts/
+│   ├── build.sh
+│   └── test.sh
 └── README.md
 
 ## Jenkinsfile
@@ -43,27 +79,17 @@ project-root/
 ``` groovy
 pipeline {
     agent any
+
     stages {
         stage('Run Scripts') {
             steps {
                 sh './scripts/load/all.sh'
                 sh './scripts/demographic/all.sh'
-                sh './scripts/ripple/all.sh'
-                sh './scripts/GPFA/all.sh'
-                sh './scripts/NT/all.sh'
-                sh './scripts/memory_load/all.sh'
+                // sh './scripts/ripple/all.sh'
+                // sh './scripts/GPFA/all.sh'
+                // sh './scripts/NT/all.sh'
+                // sh './scripts/memory_load/all.sh'
             }
         }
-        stage('Run Tests') {
-            steps {
-                sh 'python -m unittest discover tests'
-            }
-        }
-        stage('Lint') {
-            steps {
-                sh 'pylint **/*.py'
-            }
-        }
-    }
 }
 ```

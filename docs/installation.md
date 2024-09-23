@@ -56,7 +56,7 @@ install-git-annex-using-cabal() {
     cabal install --bindir=$BINDIR git-annex
     export PATH=$BINDIR:$PATH
     grep -qxF 'export PATH=$HOME/.cabal/bin:$PATH' $HOME/.bashrc || echo 'export PATH=$HOME/.cabal/bin:$PATH' >> $HOME/.bashrc
-    git-annex --version
+    git-annex version
 }
 ```
 
@@ -116,4 +116,16 @@ ln -s ../scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM/data_nix
 ls ./data_nix
 ```
 
+</details>
+
+
+<details>
+<summary>Add the dataset repository as a gitmodule</summary>
+```bash
+touch .gitmodules
+git config -f .gitmodules submodule.scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM.path scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM
+git config -f .gitmodules submodule.scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM.url ssh://git@gin.g-node.org:22/USZ_NCH/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM
+git submodule init
+git submodule update
+```
 </details>

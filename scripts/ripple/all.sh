@@ -43,7 +43,8 @@ main() {
         # Direction
         "./NT/direction/kde_plot.py"
         "./NT/direction/stats/vector_direction_test.py"
-        "./NT/direction/stats/SWR+_vs_SWR-.py"                        
+        "./NT/direction/stats/SWR+_vs_SWR-.py"
+        "./NT/direction/stats/rSWR+_vER_and_rSWR+_vOR.py"                
 
         # Stats
         "./NT/direction/stats/vector_direction_test.py"        

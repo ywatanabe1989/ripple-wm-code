@@ -2,31 +2,14 @@ pipeline {
     agent any
 
     stages {
-        stage('Run Demographic Script') {
+        stage('Run Scripts') {
             steps {
-                sh './scripts/demographic/all.sh'
+                sh '../scripts/load/all.sh'
+                sh '../scripts/demographic/all.sh'
+                // sh '../scripts/ripple/all.sh'
+                // sh '../scripts/GPFA/all.sh'
+                // sh '../scripts/NT/all.sh'
+                // sh '../scripts/memory_load/all.sh'
             }
         }
-        stage('Check Log') {
-            steps {
-                script {
-                    def logContent = readFile('./scripts/demographic/all.sh.log').trim()
-                    if (!logContent.contains("$0 ends")) {
-                        error "Script did not complete successfully"
-                    }
-                }
-            }
-        }
-        stage('Verify Python Script') {
-            steps {
-                sh 'python3 -m py_compile ./scripts/demographic/fetch_demographic_data.py'
-            }
-        }
-    }
-
-    post {
-        always {
-            archiveArtifacts artifacts: './scripts/demographic/all.sh.log', allowEmptyArchive: true
-        }
-    }
 }

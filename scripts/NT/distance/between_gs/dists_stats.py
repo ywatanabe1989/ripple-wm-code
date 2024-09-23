@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-03 18:38:12 (ywatanabe)"
+# Time-stamp: "2024-09-23 22:04:22 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -38,9 +38,13 @@ def run_pairwise_stats_test(df):
         group1 = _df.loc[_df.merged == g1, "dist"]
         group2 = _df.loc[_df.merged == g2, "dist"]
 
-        # Undersample to the size of the smaller group
+        group1 = group1[~group1.isna()]
+        group2 = group2[~group2.isna()]
+
+        # Undersample to the size of the smaller group for the requirements of Wilcoxon test
         min_size = min(len(group1), len(group2))
 
+        np.random.seed(42)
         sampled_group1 = np.random.choice(group1, size=min_size, replace=False)
         sampled_group2 = np.random.choice(group2, size=min_size, replace=False)
 
@@ -83,17 +87,20 @@ def run_pairwise_stats_test(df):
     return pivot
 
 
-def plot_p_values(pivot):
+def plot_p_values(df_pvals, match):
+    indi_match = mngs.gen.search(f"match-{match}", df_pvals.index)[1]
+    cols_match = mngs.gen.search(f"match-{match}", df_pvals.columns)[1]
+    df_pvals_match = df_pvals.loc[indi_match, cols_match]
 
     # Create heatmap
     fig, ax = mngs.plt.subplots()
-    ax.imshow2d(pivot, vmin=0, vmax=1.0, cmap="viridis_r")
+    ax.imshow2d(df_pvals_match, vmin=0, vmax=1.0, cmap="viridis_r")
     ax.set_xyt(None, None, "P-values for Group Comparisons")
     ax.set_ticks(
         xvals="auto",
-        xticks=pivot.columns,
+        xticks=df_pvals_match.columns,
         yvals="auto",
-        yticks=pivot.index,
+        yticks=df_pvals_match.index,
     )
     return fig
 
@@ -184,7 +191,6 @@ def parse_match(df):
     df.loc[mngs.gen.search("match-2", df["phase_combi_match"])[0], "match"] = 2
     return df
 
-
 def plot_kde(df):
     # Plotting
     fig, axes = mngs.plt.subplots(
@@ -193,10 +199,11 @@ def plot_kde(df):
     for _, row in df.iterrows():
         label = row.phase_combi_match
         ax = axes[0] if row.match == 1 else axes[1]
-        ax.plot_with_ci(
-            row.xx,
-            row.yy_mean,
-            row.yy_std,
+        ax.plot_(
+            xx=row.xx,
+            mean=row.yy_mean,
+            # std=row.yy_std,
+            ci=row.yy_ci,
             alpha=0.1,
             label=label,
             id=label,
@@ -215,15 +222,15 @@ def main():
     df = rename_phases(df)
     df = dist2rank(df)
 
+    # Stats
     df_stats = run_pairwise_stats_test(df)
-    fig_pvals = plot_p_values(df_stats)
+    fig_pvals_in = plot_p_values(df_stats, match=1)
+    fig_pvals_out = plot_p_values(df_stats, match=2)
 
+    # Plotting
     df = calc_kde(df)
-
     df = calc_kde_mean_std(df)
-
     df = parse_match(df)
-
     df = mngs.pd.replace(
         df,
         {"phase_combi-": "", "_match-1": "", "_match-2": ""},
@@ -234,10 +241,28 @@ def main():
 
     # Saving
     SDIR = "./data/CA1/dist_rank_summary/"
-    mngs.io.save(fig_pvals, SDIR + "pvals.jpg", from_cwd=True)
+    mngs.io.save(fig_pvals_in, SDIR + "pvals_match_in.jpg", from_cwd=True)
     mngs.io.save(
-        mngs.pd.to_xyz(fig_pvals.to_sigma()), SDIR + "pvals.csv", from_cwd=True
+        mngs.pd.to_xyz(fig_pvals_in.to_sigma()), SDIR + "pvals_match_in.csv", from_cwd=True
     )
+
+    mngs.io.save(fig_pvals_out, SDIR + "pvals_match_out.jpg", from_cwd=True)
+    mngs.io.save(
+        mngs.pd.to_xyz(fig_pvals_out.to_sigma()), SDIR + "pvals_match_out.csv", from_cwd=True
+    )
+
+    # df_pvals = fig_pvals.to_sigma()
+    # indi_in = mngs.gen.search("match-1.0", df_pvals.index)[1]
+    # cols_in = mngs.gen.search("match-1.0", df_pvals.columns)[1]
+    # df_in = df_pvals.loc[indi_in, cols_in]
+    # mngs.io.save(df_in, SDIR + "pvals_match_in.csv", from_cwd=True)
+
+    # indi_out = mngs.gen.search("match-2.0", df_pvals.index)[1]
+    # cols_out = mngs.gen.search("match-2.0", df_pvals.columns)[1]
+    # df_out = df_pvals.loc[indi_out, cols_out]
+    # mngs.io.save(df_out, SDIR + "pvals_match_out.csv", from_cwd=True)
+
+
     # mngs.io.save(df_stats, SDIR + "pvals.csv", from_cwd=True)
     mngs.io.save(
         fig_kde,

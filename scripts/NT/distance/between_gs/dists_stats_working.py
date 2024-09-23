@@ -1,17 +1,13 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-26 11:46:57 (ywatanabe)"
+# Time-stamp: "2024-09-24 00:31:47 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script does XYZ."""
 
 
-"""
-Imports
-"""
+"""Imports"""
 import importlib
 import logging
 import os
@@ -35,29 +31,6 @@ from icecream import ic
 from natsort import natsorted
 from scipy.stats import rankdata
 from tqdm import tqdm
-
-# import joypy
-mngs.pd.ignore_SettingWithCopyWarning()
-# sys.path = ["."] + sys.path
-# from scripts import utils, load
-
-"""
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
-
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
-
-
-"""
-Functions & Classes
-"""
-
-
 from itertools import combinations
 
 import matplotlib.pyplot as plt
@@ -66,6 +39,12 @@ import scipy.stats as stats
 import seaborn as sns
 from scipy import stats
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
+
+mngs.pd.ignore_SettingWithCopyWarning()
+
+"""Functions & Classes"""
+
+
 
 
 def under_sample(df, cols_NT):
@@ -94,8 +73,8 @@ def NT_to_rank(df, cols_NT):
     df_NT = df[cols_NT].copy()  # (9860, 8)
     df_rank = np.nan * df_NT.copy()  # (9860, 8)
 
-    for col_session in df["sub_session_roi"].unique():
-        indi_session = df["sub_session_roi"] == col_session
+    for col_session in df["merged"].unique():
+        indi_session = df["merged"] == col_session
 
         # Slice the session data
         NT_session = np.array(df_NT)[indi_session]  # (1000, 8)
@@ -110,8 +89,8 @@ def NT_to_rank(df, cols_NT):
         # Buffering
         df_rank[indi_session] = rank_session
 
-    val_rank_max = np.array(df_NT)[np.where(df_rank == np.nanmax(df_rank))]
-    val_rank_min = np.array(df_NT)[np.where(df_rank == np.nanmin(df_rank))]
+    # val_rank_max = np.array(df_NT)[np.where(df_rank == np.nanmax(df_rank))]
+    # val_rank_min = np.array(df_NT)[np.where(df_rank == np.nanmin(df_rank))]
     # print(val_rank_max)
     # print(val_rank_min)
 
@@ -128,6 +107,8 @@ def perform_pairwise_statistical_test(df, cols_NT):
 
         x1 = x1[~np.isnan(x1)]
         x2 = x2[~np.isnan(x2)]
+
+        __import__("ipdb").set_trace()
 
         statistic, p_value = stats.wilcoxon(x1, x2)
 
@@ -147,66 +128,40 @@ def perform_pairwise_statistical_test(df, cols_NT):
     results["p_val_unc"] = results["p_val_unc"].round(3)
     results["p_val"] = results["p_val"].round(3)
 
-    print(results.sort_values(["p_val"]))
+    # print(results.sort_values(["p_val"]))
+
+    return results
 
 
-# def plot_box(df, cols_NT):
-#     fig, ax = mngs.plt.subplots()
-#     df_plot = df[cols_NT]
-#     df_plot = df_plot.melt()
-#     ax.sns_boxplot(
-#         data=df_plot[~df_plot.value.isna()],
-#         x="variable",
-#         y="value",
-#     )
-#     return fig
 
-
-# # Working
 # def plot_violin(df, cols_NT):
-#     fig, ax = mngs.plt.subplots(figsize=(10, 6))
+#     fig, ax = mngs.plt.subplots()
 #     df_plot = df[cols_NT].melt()
-#     sns.violinplot(
+
+#     ax.sns_violinplot(
 #         data=df_plot[~df_plot.value.isna()],
 #         x="variable",
 #         y="value",
-#         ax=ax,
 #         inner="quartile",
 #     )
-#     ax.set_title("Distribution of Ranked Data")
-#     ax.set_xlabel("Variables")
-#     ax.set_ylabel("Rank")
 #     return fig
 
 
-def plot_violin(df, cols_NT):
-    fig, ax = mngs.plt.subplots()
-    df_plot = df[cols_NT].melt()
-
-    ax.sns_violinplot(
-        data=df_plot[~df_plot.value.isna()],
-        x="variable",
-        y="value",
-        inner="quartile",
-    )
-    return fig
-
-
-def plot_joy(df, cols_NT):
-    df_plot = df[cols_NT]
-    fig, ax = mngs.plt.subplots()
-    ax.joyplot(df[cols_NT])
-    # fig, axes = joypy.joyplot(
-    #     data=df_plot,
-    #     colormap=plt.cm.viridis,
-    #     title="Distribution of Ranked Data",
-    #     labels=cols_NT,
-    #     overlap=0.5,
-    #     orientation="vertical",
-    # )
-    # plt.xlabel("Variables")
-    # plt.ylabel("Rank")
-    return fig
+# def plot_joy(df, cols_NT):
+#     df_plot = df[cols_NT]
+#     fig, ax = mngs.plt.subplots()
+#     ax.joyplot(df[cols_NT])
+#     # fig, axes = joypy.joyplot(
+#     #     data=df_plot,
+#     #     colormap=plt.cm.viridis,
+#     #     title="Distribution of Ranked Data",
+#     #     labels=cols_NT,
+#     #     overlap=0.5,
+#     #     orientation="vertical",
+#     # )
+#     # plt.xlabel("Variables")
+#     # plt.ylabel("Rank")
+#     return fig
 
 
 # # working
@@ -319,7 +274,9 @@ def plot_kde(df, cols_NT):
 
 def main():
     # Loading
-    LPATHS = mngs.io.glob("./scripts/NT/distance/plot_dists/*.csv")
+    LPATHS = mngs.io.glob("./scripts/NT/distance/between_gs/calc_dists/*.csv")
+    # LPATHS = mngs.io.glob("./scripts/NT/distance/between_gs/plot_dists/*.csv")
+
     df = pd.concat([mngs.io.load(lpath) for lpath in LPATHS]).reset_index()
     df = df.drop(columns=["index"])
 
@@ -332,13 +289,18 @@ def main():
     df = NT_to_rank(df, cols_NT)
 
     # Plotting
-    # fig = plot_box(df, cols_NT)
-    # fig = plot_joy(df, cols_NT)
     fig = plot_kde(df, cols_NT)
-    plt.show()
-    __import__("ipdb").set_trace()
+    # plt.show()
 
-    perform_pairwise_statistical_test(df, cols_NT)
+    stats = perform_pairwise_statistical_test(df, cols_NT)
+
+    indi_in = mngs.gen.search("1.0-", stats.col1, as_bool=True)[0] * mngs.gen.search("1.0-", stats.col2, as_bool=True)[0]
+    indi_out = mngs.gen.search("2.0-", stats.col1, as_bool=True)[0] * mngs.gen.search("2.0-", stats.col2, as_bool=True)[0]
+
+    stats[indi_in]
+
+
+
 
     __import__("ipdb").set_trace()
 
@@ -360,19 +322,12 @@ def main():
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
         plt,
         verbose=False,
         line_width=1.0,
+        np=np
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
