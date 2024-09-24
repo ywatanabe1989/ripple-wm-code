@@ -1,10 +1,9 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-29 13:26:29 (ywatanabe)"
-# /mnt/ssd/ripple-wm-code/scripts/NT/TDA.py
+# Time-stamp: "2024-09-24 12:50:46 (ywatanabe)"
+# /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/calc_dists.py
 
-
-"""This script does XYZ."""
+"""This script calculates distances between geometric medians for phases."""
 
 """Imports"""
 import sys
@@ -17,12 +16,26 @@ import xarray as xr
 
 """Functions & Classes"""
 
-# PHASES_TO_PLOT = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
-PHASES_TO_PLOT = ["Encoding", "Retrieval"]
 MATCH_CONDI = ["All", "Match IN", "Mismatch OUT"]
 
 
 def balance_phase(NT):
+    """Balance phases in neural trajectory data.
+
+    Parameters
+    ----------
+    NT : numpy.ndarray
+        Neural trajectory data.
+
+    Returns
+    -------
+    numpy.ndarray
+        Balanced neural trajectory data.
+
+    Example
+    -------
+    balanced_nt = balance_phase(neural_trajectory)
+    """
     NTs_pp = {
         phase: NT[..., data.mid_start : data.mid_end]
         for phase, data in CONFIG.PHASES.items()
@@ -33,7 +46,30 @@ def balance_phase(NT):
 
 
 # Distances
-def calc_dists(NT, GS, TI, ca1):
+def calc_dists(NT, GS, TI, ca1, phases_to_plot):
+    """Calculate distances between neural trajectories and ground states.
+
+    Parameters
+    ----------
+    NT : numpy.ndarray
+        Neural trajectory data.
+    GS : numpy.ndarray
+        Geometric medians
+    TI : pandas.DataFrame
+        Trial information.
+    ca1 : dict
+        CA1 region information.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame containing distance information.
+
+    Example
+    -------
+    dist_df = calc_dists(nt, gs, ti, ca1)
+    """
+
     # To the shape of ("factor", "phase", ...)
     NT = mngs.gen.transpose(
         NT,
@@ -59,7 +95,7 @@ def calc_dists(NT, GS, TI, ca1):
     dist_df = []
     for i_phase_nt, phase_nt in enumerate(CONFIG.PHASES.keys()):
         for i_phase_g, phase_g in enumerate(CONFIG.PHASES.keys()):
-            if (phase_nt in PHASES_TO_PLOT) and (phase_g in PHASES_TO_PLOT):
+            if (phase_nt in phases_to_plot) and (phase_g in phases_to_plot):
                 _dist = dists_xr[i_phase_nt, ..., i_phase_g]
                 match_flatten = np.array(_dist.match).repeat(_dist.shape[-1])
                 dist_flatten = np.array(_dist).flatten()
@@ -87,6 +123,22 @@ def calc_dists(NT, GS, TI, ca1):
 
 
 def extract_conditions(df):
+    """Extract unique conditions from the dataframe.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+
+    Returns
+    -------
+    list
+        List of condition dictionaries.
+
+    Example
+    -------
+    conditions = extract_conditions(df)
+    """
     conditions = {
         k: df[k].unique().tolist() for k in ["phase_g", "phase_nt", "match"]
     }
@@ -108,6 +160,22 @@ def extract_conditions(df):
 
 
 def replace_group(text):
+    """Replace group text with LaTeX formatted string.
+
+    Parameters
+    ----------
+    text : str
+        Input text.
+
+    Returns
+    -------
+    str
+        LaTeX formatted string.
+
+    Example
+    -------
+    formatted_text = replace_group("phase_g-Encoding_phase_nt-Retrieval")
+    """
     replaced = (
         text.replace("_phase_nt-", "-NT")
         .replace("phase_g-", "g")
@@ -120,29 +188,36 @@ def replace_group(text):
 
 
 def main():
-    dfs = []
-    for i_ca1, ca1 in enumerate(CONFIG.ROI.CA1):
+    """Main function to process neural trajectory data."""
+    PHASES_TO_PLOT = [
+        ["Fixation", "Encoding", "Maintenance", "Retrieval"],
+        ["Encoding", "Retrieval"],
+    ]
 
-        lpath_NT = mngs.gen.replace(CONFIG.PATH.NT_Z, ca1)
-        lpath_GS = mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1)
-        lpath_TI = mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
-        # spath_base = eval(lpath_NT.replace(".npy", "/"))
+    for phases_to_plot in PHASES_TO_PLOT:
+        dfs = []
+        for i_ca1, ca1 in enumerate(CONFIG.ROI.CA1):
 
-        # NT, G
-        NT = mngs.io.load(lpath_NT)
-        GS = mngs.io.load(lpath_GS)
-        TI = mngs.io.load(lpath_TI)
+            # Loading paths
+            lpath_NT = mngs.gen.replace(CONFIG.PATH.NT_Z, ca1)
+            lpath_GS = mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1)
+            lpath_TI = mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
 
-        NT = balance_phase(NT)
+            # NT, G
+            NT = mngs.io.load(lpath_NT)
+            GS = mngs.io.load(lpath_GS)
+            TI = mngs.io.load(lpath_TI)
 
-        # N Samples
-        df = calc_dists(NT, GS, TI, ca1)
+            NT = balance_phase(NT)
 
-        dfs.append(df)
+            # N Samples
+            df = calc_dists(NT, GS, TI, ca1, phases_to_plot)
 
-    df = pd.concat(dfs)
+            dfs.append(df)
 
-    mngs.io.save(df, "./data/CA1/dist.csv", from_cwd=True)
+        df = pd.concat(dfs)
+
+        mngs.io.save(df, f"{'_'.join(phases_to_plot)}/dist_ca1.csv", from_cwd=False)
 
 
 if __name__ == "__main__":
