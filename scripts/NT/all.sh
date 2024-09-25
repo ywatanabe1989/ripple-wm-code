@@ -31,8 +31,9 @@ main() {
         # Distance
         "./distance/from_O/MTL_regions.py"
         "./distance/between_gs/geometrics_medians.py"
-        "./distance/between_gs/calc_dists.py" # fixme; pval changed from Sep 3
-        "./distance/between_gs/dists_stats.py" # fixme; pval changed from Sep 3
+        "./distance/between_gs/calc_dists.py"
+        "./distance/between_gs/to_rank_dists.py"
+        "./distance/between_gs/dists_stats.py"
         "./distance/between_gs/MTL_regions.py"
 
         # Classification

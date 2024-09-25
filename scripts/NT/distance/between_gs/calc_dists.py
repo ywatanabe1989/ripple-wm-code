@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-24 12:50:46 (ywatanabe)"
+# Time-stamp: "2024-09-26 05:17:37 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/calc_dists.py
 
 """This script calculates distances between geometric medians for phases."""
@@ -19,7 +19,7 @@ import xarray as xr
 MATCH_CONDI = ["All", "Match IN", "Mismatch OUT"]
 
 
-def balance_phase(NT):
+def extract_10_mid_bins(NT):
     """Balance phases in neural trajectory data.
 
     Parameters
@@ -34,7 +34,7 @@ def balance_phase(NT):
 
     Example
     -------
-    balanced_nt = balance_phase(neural_trajectory)
+    balanced_nt = extract_10_mid_bins(neural_trajectory)
     """
     NTs_pp = {
         phase: NT[..., data.mid_start : data.mid_end]
@@ -47,7 +47,7 @@ def balance_phase(NT):
 
 # Distances
 def calc_dists(NT, GS, TI, ca1, phases_to_plot):
-    """Calculate distances between neural trajectories and ground states.
+    """Calculate distances geometric medians.
 
     Parameters
     ----------
@@ -179,7 +179,9 @@ def replace_group(text):
     replaced = (
         text.replace("_phase_nt-", "-NT")
         .replace("phase_g-", "g")
+        .replace("Fixation", "_F")
         .replace("Encoding", "_E")
+        .replace("Maintenance", "_M")
         .replace("Retrieval", "_R")
     )
     tex = f"${replaced}$"
@@ -208,16 +210,27 @@ def main():
             GS = mngs.io.load(lpath_GS)
             TI = mngs.io.load(lpath_TI)
 
-            NT = balance_phase(NT)
+            # Undersampling
+            NT = extract_10_mid_bins(NT)
 
             # N Samples
             df = calc_dists(NT, GS, TI, ca1, phases_to_plot)
 
             dfs.append(df)
 
+        # Saving
         df = pd.concat(dfs)
-
         mngs.io.save(df, f"{'_'.join(phases_to_plot)}/dist_ca1.csv", from_cwd=False)
+
+        # Box plot
+        fig, ax = mngs.plt.subplots()
+        ax.sns_boxplot(
+            data=df,
+            x="group",
+            y="dist",
+            showfliers=False,
+            )
+        mngs.io.save(fig, f"{'_'.join(phases_to_plot)}/dist_ca1_box.jpg", from_cwd=False)
 
 
 if __name__ == "__main__":
