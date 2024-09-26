@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-08-22 13:27:33 (ywatanabe)"
+# Time-stamp: "2024-09-26 19:42:44 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/geometrics_medians.py
 
 
@@ -66,6 +66,9 @@ def main():
 
             # Trial
             n_trials = NT_phase.shape[1]
+            """
+            i_trial = 0
+            """
             gs_trial[phase] = pd.DataFrame(
                 np.vstack(
                     [

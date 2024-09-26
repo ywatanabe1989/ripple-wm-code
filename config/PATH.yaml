@@ -15,6 +15,9 @@ PATH:
   iEEG:
     f"./data/Sub_{sub}/Session_{session}/iEEG/{roi}.pkl"
 
+  iEEG_WAVELET:
+    f"./data/Sub_{sub}/Session_{session}/iEEG_wavelet/{roi}.pkl"
+    
   iEEG_RIPPLE_BAND:
     f"./data/Sub_{sub}/Session_{session}/iEEG_ripple_preprocessed/{roi}.pkl"
 

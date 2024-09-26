@@ -1,15 +1,11 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-24 01:31:19 (ywatanabe)"
+# Time-stamp: "2024-09-26 18:07:51 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
-"""
-This script does XYZ.
-"""
+"""This script does XYZ."""
 
-"""
-Imports
-"""
+"""Imports"""
 import sys
 import warnings
 from functools import partial
@@ -26,20 +22,13 @@ from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.svm import LinearSVC as SVC
 from tqdm import tqdm
 
-# Params
-# PHASES_TASKS = ["Encoding", "Retrieval"]
-PHASES_TASKS = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
-"""
-Warnings
-"""
+"""Warnings"""
 warnings.simplefilter("ignore", RuntimeWarning)
 
-"""
-Functions & Classes
-"""
+"""Functions & Classes"""
 
 
-def NT_to_X_T_C(NT, trials_info):
+def NT_to_X_T_C(NT, trials_info, phases_tasks):
     """Extracts NT of the middle 1 second for each phase as X"""
 
     trials_info = mngs.pd.merge_columns(trials_info, "set_size", "match")
@@ -62,7 +51,7 @@ def NT_to_X_T_C(NT, trials_info):
     T = T.reshape(-1)
     C = np.stack(list(C.values()), axis=-1).reshape(-1)
 
-    indi_task = mngs.gen.search(CONFIG.PHASES_TASK, T)[0]
+    indi_task = mngs.gen.search(phases_tasks, T)[0]
 
     X = X[indi_task]
     T = T[indi_task]
@@ -71,7 +60,7 @@ def NT_to_X_T_C(NT, trials_info):
     return X, T, C
 
 
-def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS):
+def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS, phases_tasks):
     clf_name = clf.__class__.__name__
     is_dummy = clf_name == "DummyClassifier"
 
@@ -90,11 +79,15 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS):
         X_train, T_train = rus.fit_resample(X_train, T_train)
 
         # Adds GS to the last of test data
-        X_GS, T_GS, C_GS = format_gs(GS)
+        X_GS, T_GS, C_GS = format_gs(GS, phases_tasks)
+        __import__("ipdb").set_trace()
         X_test = np.vstack([X_test, X_GS])
         T_test = np.hstack([T_test, T_GS])
         C_test = np.hstack([C_test, C_GS])
-
+        # ipdb> X_test.shape
+        # (50, 80)
+        # ipdb> X_GS.shape
+        # (2, 160)
         # Trains the classifier "with full training data"
         clf.fit(X_train, T_train)
 
@@ -171,9 +164,9 @@ def aggregate_conditional_metrics(conditional_metrics, dummy):
     return df
 
 
-def calc_folds(NT, trials_info, GS, dummy):
+def calc_folds(NT, trials_info, GS, dummy, phases_tasks):
     # Loading
-    X, T, C = NT_to_X_T_C(NT, trials_info)
+    X, T, C = NT_to_X_T_C(NT, trials_info, phases_tasks)
 
     # CV maintener
     rskf = RepeatedStratifiedKFold(
@@ -185,7 +178,7 @@ def calc_folds(NT, trials_info, GS, dummy):
 
     # Train and Evaluate SVC
     conditional_metrics = train_and_eval_SVC(
-        clf, rskf, X, T, C, trials_info, GS
+        clf, rskf, X, T, C, trials_info, GS, phases_tasks
     )
 
     # Organize data
@@ -194,11 +187,11 @@ def calc_folds(NT, trials_info, GS, dummy):
     return metrics_df
 
 
-def main_NT(NT, trials_info, GS):
+def main_NT(NT, trials_info, GS, phases_tasks):
 
     metrics = []
     for dummy in [True, False]:
-        _metrics = calc_folds(NT, trials_info, GS, dummy)
+        _metrics = calc_folds(NT, trials_info, GS, dummy, phases_tasks)
         metrics.append(_metrics)
     metrics = pd.concat(metrics)
 
@@ -294,24 +287,27 @@ def format_conf_mats_all(conf_mats_all):
     return conf_mats_all
 
 
-def format_gs(GS):
+def format_gs(GS, phases_tasks):
+    GS = GS[mngs.gen.search(phases_tasks, GS.columns)[1]]
     X = np.array(GS).T
     X = X[..., np.newaxis]
+    __import__("ipdb").set_trace()
     X = np.repeat(X, 20, axis=-1).reshape(len(X), -1)
     T = np.array(GS.columns)
     C = np.full(len(X), "geometric_median")
-    indi_task = mngs.gen.search(CONFIG.PHASES_TASK, T)[0]
+    indi_task = mngs.gen.search(phases_tasks, T)[0]
     return X[indi_task], T[indi_task], C[indi_task]
 
 
-def main():
+def main(phases_tasks):
     # Params ----------------------------------------
     # CONFIG.N_REPEAT = 100
     # CONFIG.N_CV = 10
     CONFIG.N_REPEAT = 2
     CONFIG.N_CV = 2
-    CONFIG.PHASES_TASK = PHASES_TASKS
-    CONFIG.SPATH_PREFFIX = f"./{'_'.join(CONFIG.PHASES_TASK)}/"
+    # phases_tasks = phases_tasks
+    # CONFIG.SPATH_PREFFIX = f"./{'_'.join(phases_tasks)}/"
+    sdir = f"./{'_'.join(phases_tasks)}/"
 
     # Calculation ----------------------------------------
     metrics_all = []
@@ -319,6 +315,7 @@ def main():
     for ca1 in tqdm(CONFIG.ROI.CA1):
         NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
         GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
+        __import__("ipdb").set_trace()
         trials_info = mngs.io.load(
             mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
         )
@@ -326,6 +323,7 @@ def main():
             NT,
             trials_info,
             GS,
+            phases_tasks,
         )
 
         for k, v in ca1.items():
@@ -351,7 +349,7 @@ def main():
     # Metrics
     mngs.io.save(
         metrics_all,
-        CONFIG.SPATH_PREFFIX + f"metrics_all.csv",
+        sdir + f"metrics_all.csv",
         from_cwd=False,
     )
 
@@ -366,7 +364,7 @@ def main():
 
     mngs.io.save(
         weights_and_biases,
-        CONFIG.SPATH_PREFFIX + "weights_and_biases.pkl",
+        sdir + "weights_and_biases.pkl",
         from_cwd=False,
     )
 
@@ -380,17 +378,17 @@ def main():
             fig, cm = mngs.ml.plt.conf_mat(plt, cm=cm, title=string)
             mngs.io.save(
                 fig,
-                CONFIG.SPATH_PREFFIX + f"conf_mat/figs/{string}.jpg",
+                sdir + f"conf_mat/figs/{string}.jpg",
                 from_cwd=False,
             )
             mngs.io.save(
                 cm,
-                CONFIG.SPATH_PREFFIX + f"conf_mat/csv/{string}.csv",
+                sdir + f"conf_mat/csv/{string}.csv",
                 from_cwd=False,
             )
             mngs.io.save(
                 mngs.pd.to_xyz(cm),
-                CONFIG.SPATH_PREFFIX + f"conf_mat/csv/xyz/{string}_xyz.csv",
+                sdir + f"conf_mat/csv/xyz/{string}_xyz.csv",
                 from_cwd=False,
             )
 
@@ -404,7 +402,11 @@ if __name__ == "__main__":
         verbose=False,
         agg=True,
     )
-    main()
+    for phases_tasks in [
+            ["Encoding", "Retrieval"],
+            ["Fixation", "Encoding", "Maintenance", "Retrieval"],
+    ]:
+        main(phases_tasks)
     mngs.gen.close(CONFIG, verbose=False, notify=True)
 
 # EOF
