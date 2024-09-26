@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-26 18:07:51 (ywatanabe)"
+# Time-stamp: "2024-09-26 21:50:00 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/SVC.py
 
 """This script does XYZ."""
@@ -29,9 +29,14 @@ warnings.simplefilter("ignore", RuntimeWarning)
 
 
 def NT_to_X_T_C(NT, trials_info, phases_tasks):
-    """Extracts NT of the middle 1 second for each phase as X"""
+    """Extracts NT of the middle 1 second for each phase as X
+    X: NT
+    T: Target (phases)
+    C: Condition (match & set size)
+    """
 
-    trials_info = mngs.pd.merge_columns(trials_info, "set_size", "match")
+    # trials_info = mngs.pd.merge_columns(trials_info, "set_size", "match")
+    # trials_info = mngs.pd.merge_columns(trials_info, "set_size", "match")
 
     X = {}
     T = {}
@@ -43,13 +48,17 @@ def NT_to_X_T_C(NT, trials_info, phases_tasks):
         ]
         T[phase] = np.full(len(X[phase]), phase)
         assert len(X[phase]) == len(trials_info)
-        C[phase] = trials_info["merged"]
+        # C[phase] = trials_info["merged"]
+        C[phase] = trials_info["match"]
 
-    X = np.stack(list(X.values()), axis=1)
-    T = np.stack(list(T.values()), axis=1)
-    X = X.reshape(X.shape[0] * X.shape[1], -1)  # 3 * 20
-    T = T.reshape(-1)
-    C = np.stack(list(C.values()), axis=-1).reshape(-1)
+    X = np.stack(list(X.values()), axis=1) # (50, 4, 3, 10)
+    T = np.stack(list(T.values()), axis=1) # (50, 4)
+    C = np.stack(list(C.values()), axis=1) # (50, 4)
+
+    # Reshape
+    X = X.reshape(X.shape[0]* X.shape[1], -1)  # (200, 30)
+    T = T.reshape(-1) # (200,)
+    C = C.reshape(-1)
 
     indi_task = mngs.gen.search(phases_tasks, T)[0]
 
@@ -60,19 +69,29 @@ def NT_to_X_T_C(NT, trials_info, phases_tasks):
     return X, T, C
 
 
-def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS, phases_tasks):
-    clf_name = clf.__class__.__name__
+def train_and_eval_SVC(clf_class, rskf, X, T, C, trials_info, GS, phases_tasks):
+    # clf_name = clf.__class__.__name__
+    clf_name = clf_class.__name__
     is_dummy = clf_name == "DummyClassifier"
 
     conditions_uq = list(np.unique(C))
     conditional_metrics = mngs.gen.listed_dict()
 
     for train_index, test_index in rskf.split(X, y=T):
+        # Initialize classifier for each fold
+        clf = clf_class()
+
         # Runs a fold
         X_train, X_test = X[train_index], X[test_index]
         T_train, T_test = T[train_index], T[test_index]
+
+        # To Z
+        with mngs.gen.suppress_output():
+            X_train = mngs.gen.to_z(X_train, axis=-1)
+            X_test = mngs.gen.to_z(X_test, axis=-1)
+
         _, C_test = C[train_index], C[test_index]
-        # 60 features; 3 factors * 20 bins
+        # 30 features; 3 factors * 10 bins
 
         # Undersamples training data
         rus = RandomUnderSampler(random_state=42)
@@ -80,14 +99,10 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS, phases_tasks):
 
         # Adds GS to the last of test data
         X_GS, T_GS, C_GS = format_gs(GS, phases_tasks)
-        __import__("ipdb").set_trace()
         X_test = np.vstack([X_test, X_GS])
         T_test = np.hstack([T_test, T_GS])
         C_test = np.hstack([C_test, C_GS])
-        # ipdb> X_test.shape
-        # (50, 80)
-        # ipdb> X_GS.shape
-        # (2, 160)
+
         # Trains the classifier "with full training data"
         clf.fit(X_train, T_train)
 
@@ -97,18 +112,23 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS, phases_tasks):
         # Calculates conditional metrics
         for condition in conditions_uq + ["geometric_median", "all"]:
 
-            indi = (
-                C_test != "geometric_median"
-                if condition == "all"
-                else C_test == condition
-            )
+            if condition == "all":
+                indi_condi = C_test != "geometric_median"
+            else:
+                indi_condi = C_test == condition
 
-            bACC_condi = balanced_accuracy_score(T_test[indi], T_pred[indi])
+            T_test_condi = T_test[indi_condi]
+            T_pred_condi = T_pred[indi_condi]
+
+            bACC_condi = balanced_accuracy_score(T_test_condi, T_pred_condi)
+
+            if not is_dummy:
+                print(bACC_condi)
 
             _, conf_mat_condi = mngs.ml.plt.conf_mat(
                 plt,
-                y_true=T_test[indi],
-                y_pred=T_pred[indi],
+                y_true=T_test_condi,
+                y_pred=T_pred_condi,
                 labels=clf.classes_,
                 sorted_labels=sort_phases(clf.classes_),
             )
@@ -130,16 +150,16 @@ def train_and_eval_SVC(clf, rskf, X, T, C, trials_info, GS, phases_tasks):
                     "weights_fold": weights,
                     "bias_fold": bias,
                     "conf_mat_fold": conf_mat_condi,
-                    "n_samples": indi.sum(),
+                    "n_samples": indi_condi.sum(),
                 }
             )
-
     return conditional_metrics
 
 
 def aggregate_conditional_metrics(conditional_metrics, dummy):
     agg = {}
     for cc, mm in conditional_metrics.items():
+
         df = pd.concat([pd.DataFrame(pd.Series(_mm)).T for _mm in mm])
         assert len(np.unique(df["classifier"])) == 1
 
@@ -174,11 +194,12 @@ def calc_folds(NT, trials_info, GS, dummy, phases_tasks):
     )
 
     # Classifier
-    clf = SVC() if not dummy else DummyClassifier(strategy="stratified")
+    # clf = SVC() if not dummy else DummyClassifier(strategy="stratified")
+    clf_class = SVC if not dummy else DummyClassifier
 
     # Train and Evaluate SVC
     conditional_metrics = train_and_eval_SVC(
-        clf, rskf, X, T, C, trials_info, GS, phases_tasks
+        clf_class, rskf, X, T, C, trials_info, GS, phases_tasks
     )
 
     # Organize data
@@ -291,8 +312,8 @@ def format_gs(GS, phases_tasks):
     GS = GS[mngs.gen.search(phases_tasks, GS.columns)[1]]
     X = np.array(GS).T
     X = X[..., np.newaxis]
-    __import__("ipdb").set_trace()
-    X = np.repeat(X, 20, axis=-1).reshape(len(X), -1)
+    n_points = CONFIG.PHASES.Fixation.mid_end - CONFIG.PHASES.Fixation.mid_start
+    X = np.repeat(X, n_points, axis=-1).reshape(len(X), -1)
     T = np.array(GS.columns)
     C = np.full(len(X), "geometric_median")
     indi_task = mngs.gen.search(phases_tasks, T)[0]
@@ -301,27 +322,28 @@ def format_gs(GS, phases_tasks):
 
 def main(phases_tasks):
     # Params ----------------------------------------
-    # CONFIG.N_REPEAT = 100
-    # CONFIG.N_CV = 10
-    CONFIG.N_REPEAT = 2
+    CONFIG.N_REPEAT = 5
     CONFIG.N_CV = 2
+    # CONFIG.N_REPEAT = 3
+    # CONFIG.N_CV = 2
     # phases_tasks = phases_tasks
     # CONFIG.SPATH_PREFFIX = f"./{'_'.join(phases_tasks)}/"
+    N_FACTORS = 3
     sdir = f"./{'_'.join(phases_tasks)}/"
 
     # Calculation ----------------------------------------
     metrics_all = []
     conf_mats_all = []
     for ca1 in tqdm(CONFIG.ROI.CA1):
-        NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))
-        GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1))
-        __import__("ipdb").set_trace()
-        trials_info = mngs.io.load(
+        NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))[:,:N_FACTORS,:]
+        GS = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1)).iloc[:N_FACTORS]
+        TI = mngs.io.load(
             mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1)
         )
+        TI["match"] = TI["match"].astype(str)
         metrics, conf_mats = main_NT(
             NT,
-            trials_info,
+            TI,
             GS,
             phases_tasks,
         )
@@ -338,12 +360,12 @@ def main(phases_tasks):
     metrics_all = format_metrics_all(pd.concat(metrics_all))
     conf_mats_all = format_conf_mats_all(pd.concat(conf_mats_all))
 
-    # Cache ----------------------------------------
-    metrics_all, conf_mats_all = mngs.io.cache(
-        "id_31024987",
-        "metrics_all",
-        "conf_mats_all",
-    )
+    # # Cache ----------------------------------------
+    # metrics_all, conf_mats_all = mngs.io.cache(
+    #     "id_31024987",
+    #     "metrics_all",
+    #     "conf_mats_all",
+    # )
 
     # Saving ----------------------------------------
     # Metrics

@@ -29,3 +29,6 @@ ln -sf ../scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM/data_ni
 ./scripts/ripple/all.sh
 ./scripts/memory_load/all.sh
 ```
+
+
+./scripts/NT/clf/linearSVC.py
