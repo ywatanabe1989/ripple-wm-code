@@ -48,7 +48,7 @@ main() {
 
         # Stats
         "./NT/direction/stats/vector_direction_test.py"        
-        "./NT/direction/stats/SWR+_vs_SWR-.py
+        "./NT/direction/stats/SWR+_vs_SWR-.py"
     )
 
     for script in "${scripts[@]}"; do

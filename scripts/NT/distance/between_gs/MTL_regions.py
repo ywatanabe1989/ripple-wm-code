@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:12:41 (ywatanabe)"
+# Time-stamp: "2024-09-27 01:29:32 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -111,16 +111,10 @@ def main():
     )
     dists = dists[~dists.isna().any(axis=1)]
 
-    # dist_HIP = dists[dists.MTL == "HIP"].distance
-    # Name: distance, Length: 7338, dtype: float64
-    # ipdb> dist_HIP.sum()
-    # 9155.965228857116
-
     fig = plot_box(dists)
     mngs.io.save(
         fig,
-        "./data/NT/distance/between_gs_of_MTL_regions_box.jpg",
-        from_cwd=True,
+        "box.jpg",
     )
 
 
@@ -133,6 +127,3 @@ if __name__ == "__main__":
     )
     main()
     mngs.gen.close(CONFIG, verbose=False, notify=False)
-
-# /tmp/fake-ywatanabe/data/NT/distance/between_gs_of_MTL_regions_box.jpg
-# /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs_of_MTL_regions/data/NT/distance/between_gs_of_MTL_regions_box.jpg

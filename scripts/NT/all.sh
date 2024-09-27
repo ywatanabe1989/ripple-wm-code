@@ -25,7 +25,7 @@ main() {
         "./znorm_NT.py"
 
         "./visualization/kde_8_factors.py"
-        "./visualization/scatter_kde.py" # good for set-size separations
+        "./visualization/scatter_kde.py" # suitable for set-size separations
         "./visualization/umap_8_factors.py" # fxime; colors, supervised
 
         # Distance

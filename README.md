@@ -16,6 +16,7 @@ ln -sf ../scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM/data_ni
 ~/.bin/nvidia-install-nvidia-driver
 ~/.bin/nvidia-install-cuda
 ~/.bin/nvidia-check-cuda 2> /dev/null | grep -i "is cuda available" # True
+# Disable Wayland
 ```
 
 
@@ -31,4 +32,5 @@ ln -sf ../scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM/data_ni
 ```
 
 
+rm -rf ./scripts/NT/clf/linearSVC/
 ./scripts/NT/clf/linearSVC.py
