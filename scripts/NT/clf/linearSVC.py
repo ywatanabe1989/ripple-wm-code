@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-27 17:36:29 (ywatanabe)"
+# Time-stamp: "2024-09-27 17:37:13 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/linearSVC.py
 
 """This script classifies neural trajectory of phases using SVC to check the existence of states in the NT space."""
@@ -274,7 +274,7 @@ if __name__ == "__main__":
     )
     for phases_tasks in [
         ["Encoding", "Retrieval"],
-        # ["Fixation", "Encoding", "Maintenance", "Retrieval"],
+        ["Fixation", "Encoding", "Maintenance", "Retrieval"],
     ]:
         main(phases_tasks)
     mngs.gen.close(CONFIG, verbose=False, notify=True)
