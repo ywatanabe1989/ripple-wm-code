@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-27 17:37:13 (ywatanabe)"
+# Time-stamp: "2024-09-27 18:32:50 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/linearSVC.py
 
 """This script classifies neural trajectory of phases using SVC to check the existence of states in the NT space."""
@@ -40,8 +40,8 @@ warnings.simplefilter("ignore", RuntimeWarning)
 
 def main(phases_tasks):
     # Params
-    CONFIG.N_REPEAT = 10
-    CONFIG.N_CV = 10
+    CONFIG.N_REPEAT = 100
+    CONFIG.N_CV = 100
     N_FACTORS = 3
     sdir = f"./{'_'.join(phases_tasks)}/"
 
@@ -211,7 +211,7 @@ def run_stats(metrics):
 
         with mngs.gen.suppress_output():
             bm_stats = mngs.stats.brunner_munzel_test(
-                df["bACCs"].iloc[0][0], df["bACCs"].iloc[1][0]
+                df["bACCs"].iloc[1][0], df["bACCs"].iloc[0][0]
             )
 
         for k, v in bm_stats.items():

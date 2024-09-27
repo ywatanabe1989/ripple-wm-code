@@ -33,7 +33,7 @@ main() {
         "./distance/between_gs/geometrics_medians.py"
         "./distance/between_gs/calc_dists.py"
         "./distance/between_gs/to_rank_dists.py"
-        "./distance/between_gs/dists_stats.py"
+        "./distance/between_gs/rank_dists_stats.py"
         "./distance/between_gs/MTL_regions.py"
 
         # Classification
