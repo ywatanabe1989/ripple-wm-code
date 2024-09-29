@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 14:26:17 (ywatanabe)"
+# Time-stamp: "2024-09-29 14:44:46 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -21,17 +21,40 @@ import scipy.stats as stats
 from scipy.stats import rankdata
 import joypy
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from itertools import product
+from scipy import stats
+from statsmodels.stats.multitest import fdrcorrection, multipletests
+import mngs.stats
 
 mngs.pd.ignore_SettingWithCopyWarning()
 
 """Functions & Classes"""
 
 
-def perform_pairwise_statistical_test(df):
+def run_stats_test(df):
+    """
+    Performs pairwise statistical tests on groups in the dataframe.
 
+    Example
+    -------
+    df = pd.DataFrame({'group': ['A', 'A', 'B', 'B'], 'dist': [1, 2, 3, 4]})
+    results = perform_pairwise_statistical_test(df)
+    print(results)
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataframe containing 'group' and 'dist' columns
+
+    Returns
+    -------
+    pandas.DataFrame
+        Results of pairwise statistical tests
+    """
     results = []
     for col1, col2 in product(df.group.unique(), df.group.unique()):
-
         x1 = df.loc[df.group == col1, "dist"]
         x2 = df.loc[df.group == col2, "dist"]
 
@@ -41,8 +64,8 @@ def perform_pairwise_statistical_test(df):
             statistic_ks, p_value_ks = np.nan, 1.0
         else:
             statistic_wc, p_value_wc = stats.wilcoxon(x1, x2)
-            __ = mngs.stats.brunner_munzel_test(x1, x2)
-            statistic_bm, p_value_bm = __["w_statistic"], __["p_value"]
+            bm_results = mngs.stats.brunner_munzel_test(x1, x2)
+            statistic_bm, p_value_bm = bm_results["w_statistic"], bm_results["p_value"]
             statistic_ks, p_value_ks = stats.ks_2samp(x1, x2)
 
         result = {
@@ -61,11 +84,28 @@ def perform_pairwise_statistical_test(df):
 
     results = pd.DataFrame(results)
 
-    # Bonferroni
-    for col in results.columns:
+    for i_col, col in enumerate(results.columns):
         if "p_val_unc" in col:
-            results[f"{col}".replace("_unc", "")] = \
-                (results[col] * len(results)).clip(upper=1.0).round(3)
+            # Bonferroni correction
+            bonf_corrected = (results[col] * len(results)).clip(upper=1.0)
+            col_corrected = f"{col}".replace("_unc", "_bonf")
+            results[col_corrected] = bonf_corrected
+            mngs.pd.mv(results, col_corrected, i_col+1)
+
+            # Benjamini-Hochberg FDR
+            _, fdr_corrected = fdrcorrection(results[col])
+            col_corrected = f"{col}".replace("_unc", "_fdr")
+            results[col_corrected] = fdr_corrected
+            mngs.pd.mv(results, col_corrected, i_col+2)
+
+            # Holm-Bonferroni
+            _, holm_corrected, _, _ = multipletests(results[col], method='holm')
+            col_corrected = f"{col}".replace("_unc", "_holm")
+            results[col_corrected] = holm_corrected
+            mngs.pd.mv(results, col_corrected, i_col+3)
+
+    # Round all float columns
+    for col in results.columns:
         if results[col].dtype == float:
             results[col] = results[col].round(3)
 
@@ -352,18 +392,20 @@ def main(phases_to_plot):
         mngs.io.save(fig_joy, sdir + f"joy_{match_str}.jpg")
 
         # Statistical test (Wilcoxon, Brunner-Munzel, and KS)
-        stats = perform_pairwise_statistical_test(df_match)
+        stats = run_stats_test(df_match)
         mngs.io.save(stats, sdir + f"stats_{match_str}.csv")
 
         for test_type in ["wc", "bm", "ks"]:
 
-            # P-values (uncorrected)
+            for correction_method in ["bonf", "fdr", "holm"]:
+                # P-values
+                fig_hm_pval = plot_heatmap(stats, f"p_val_{correction_method}_{test_type}")
+                mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_{correction_method}_{match_str}.jpg")
+
+            # P-values (Uncorrected)
             fig_hm_pval = plot_heatmap(stats, f"p_val_unc_{test_type}")
             mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_unc_{match_str}.jpg")
 
-            # P-values
-            fig_hm_pval = plot_heatmap(stats, f"p_val_{test_type}")
-            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_{match_str}.jpg")
 
             # Statistics
             fig_hm_stat = plot_heatmap(stats, f"statistic_{test_type}")
