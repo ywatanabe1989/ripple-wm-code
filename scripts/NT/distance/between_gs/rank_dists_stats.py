@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-26 08:06:49 (ywatanabe)"
+# Time-stamp: "2024-09-29 14:26:17 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -19,6 +19,8 @@ from itertools import combinations, product
 
 import scipy.stats as stats
 from scipy.stats import rankdata
+import joypy
+import matplotlib.pyplot as plt
 
 mngs.pd.ignore_SettingWithCopyWarning()
 
@@ -34,53 +36,248 @@ def perform_pairwise_statistical_test(df):
         x2 = df.loc[df.group == col2, "dist"]
 
         if np.all(np.array(x1) == np.array(x2)):
-            statistic, p_value = np.nan, 1.0
+            statistic_wc, p_value_wc = np.nan, 1.0
+            statistic_bm, p_value_bm = np.nan, 1.0
+            statistic_ks, p_value_ks = np.nan, 1.0
         else:
-            statistic, p_value = stats.wilcoxon(x1, x2)
+            statistic_wc, p_value_wc = stats.wilcoxon(x1, x2)
+            __ = mngs.stats.brunner_munzel_test(x1, x2)
+            statistic_bm, p_value_bm = __["w_statistic"], __["p_value"]
+            statistic_ks, p_value_ks = stats.ks_2samp(x1, x2)
 
         result = {
             "col1": col1,
             "col2": col2,
             "n1": len(x1),
             "n2": len(x2),
-            "statistic": statistic,
-            "p_val_unc": p_value,
+            "statistic_wc": statistic_wc,
+            "p_val_unc_wc": p_value_wc,
+            "statistic_bm": statistic_bm,
+            "p_val_unc_bm": p_value_bm,
+            "statistic_ks": statistic_ks,
+            "p_val_unc_ks": p_value_ks,
         }
-
         results.append(pd.Series(result))
 
     results = pd.DataFrame(results)
-    results["p_val"] = (results["p_val_unc"] * len(results)).clip(upper=1.0)
-    results["statistic"] = results["statistic"]
-    results["p_val_unc"] = results["p_val_unc"].round(3)
-    results["p_val"] = results["p_val"].round(3)
+
+    # Bonferroni
+    for col in results.columns:
+        if "p_val_unc" in col:
+            results[f"{col}".replace("_unc", "")] = \
+                (results[col] * len(results)).clip(upper=1.0).round(3)
+        if results[col].dtype == float:
+            results[col] = results[col].round(3)
 
     return results
 
 
 def plot_kde(df):
     fig, ax = mngs.plt.subplots()
+    hue_order = [
+        "NT_E-g_E",
+        "NT_E-g_R",
+        "NT_R-g_E",
+        "NT_R-g_R",
+    ]
+    hue_colors = {
+        "NT_E-g_E": CC["blue"],
+        "NT_E-g_R": CC["light_blue"],
+        "NT_R-g_E": CC["pink"],
+        "NT_R-g_R": CC["red"],
+    }
+
     ax.sns_kdeplot(
         data=df,
-
         x="dist",
         hue="group",
+        hue_order=hue_order,
+        hue_colors=hue_colors,
         xlim=(df.dist.min(), df.dist.max()),
+        cumulative=True,
+        id="_".join(phases_to_plot),
+    )
+    ax.legend()
+    return fig
+
+def plot_box(df):
+    fig, ax = mngs.plt.subplots()
+    hue_order = [
+        "NT_E-g_E",
+        "NT_E-g_R",
+        "NT_R-g_E",
+        "NT_R-g_R",
+    ]
+    hue_colors = {
+        "NT_E-g_E": CC["blue"],
+        "NT_E-g_R": CC["light_blue"],
+        "NT_R-g_E": CC["pink"],
+        "NT_R-g_R": CC["red"],
+    }
+
+    ax.sns_boxplot(
+        data=df,
+        y="dist",
+        # hue="group",
+        # hue_order=hue_order,
+        # hue_colors=hue_colors,
+        x="group",
+        order=hue_order,
+        palette=hue_colors,
+        # strip=True,
+        id="_".join(phases_to_plot),
+    )
+    ax.legend()
+    return fig
+
+# def plot_hist(df):
+#     fig, ax = mngs.plt.subplots()
+#     hue_order = [
+#         "NT_E-g_E",
+#         "NT_E-g_R",
+#         "NT_R-g_E",
+#         "NT_R-g_R",
+#     ]
+#     hue_colors = {
+#         "NT_E-g_E": CC["blue"],
+#         "NT_E-g_R": CC["light_blue"],
+#         "NT_R-g_E": CC["pink"],
+#         "NT_R-g_R": CC["red"],
+#     }
+
+#     ax.sns_histplot(
+#         data=df,
+#         y="dist",
+#         hue="group",
+#         hue_order=hue_order,
+#         hue_colors=hue_colors,
+#         id="_".join(phases_to_plot),
+#     )
+#     ax.legend()
+#     return fig
+
+# def plot_violin(df):
+#     fig, ax = mngs.plt.subplots()
+#     hue_order = [
+#         "NT_E-g_E",
+#         "NT_E-g_E_fake",
+#         "NT_E-g_R",
+#         "NT_E-g_R_fake",
+#         "NT_R-g_E",
+#         "NT_R-g_E_fake",
+#         "NT_R-g_R",
+#         "NT_R-g_R_fake",
+#     ]
+#     transparent_color = (1.,1.,1.,0.)
+#     hue_colors = {
+#         "NT_E-g_E": CC["blue"],
+#         "NT_E-g_E_fake": transparent_color,
+#         "NT_E-g_R": CC["light_blue"],
+#         "NT_E-g_R_fake": transparent_color,
+#         "NT_R-g_E": CC["pink"],
+#         "NT_R-g_E_fake": transparent_color,
+#         "NT_R-g_R": CC["red"],
+#         "NT_R-g_R_fake": transparent_color,
+#     }
+
+#     df_fake = df.copy()
+#     df_fake["dist"] = np.nan
+#     df_fake['group'] = df_fake['group'] + "_fake"
+#     combined_df = pd.concat([df, df_fake])
+
+#     ax.sns_violinplot(
+#         data=combined_df,
+#         y="dist",
+#         hue="group",
+#         hue_order=hue_order,
+#         hue_colors=hue_colors,
+#         palette=hue_colors,
+#         split=True,
+#         # inner="quart",
+#         id="_".join(phases_to_plot),
+#     )
+#     ax.legend()
+#     return fig
+
+def plot_violin(df):
+    fig, ax = mngs.plt.subplots()
+    hue_order = [
+        "NT_E-g_E",
+        "NT_E-g_R",
+        "NT_R-g_E",
+        "NT_R-g_R",
+    ]
+    hue_colors = {
+        "NT_E-g_E": CC["blue"],
+        "NT_E-g_R": CC["light_blue"],
+        "NT_R-g_E": CC["pink"],
+        "NT_R-g_R": CC["red"],
+    }
+
+    ax.sns_violinplot(
+        data=df,
+        y="dist",
+        hue="group",
+        hue_order=hue_order,
+        hue_colors=hue_colors,
+        palette=hue_colors,
+        split=True,
+        inner="quart",
         id="_".join(phases_to_plot),
     )
     ax.legend()
     return fig
 
 
+def plot_joy(df):
+    group_order = ["NT_E-g_E", "NT_E-g_R", "NT_R-g_E", "NT_R-g_R"]
+    color_map = {
+        "NT_E-g_E": CC["blue"],
+        "NT_E-g_R": CC["light_blue"],
+        "NT_R-g_E": CC["pink"],
+        "NT_R-g_R": CC["red"]
+    }
+    colors = [color_map[group] for group in group_order]
+
+    fig, axes = joypy.joyplot(
+        data=df,
+        by="group",
+        column="dist",
+        # color=colors,
+        title="_".join(phases_to_plot),
+        # labels_color="black",
+        overlap=0.1,
+        # order=group_order
+        # x_range=(0, 2000),
+        hist=True,
+    )
+
+    plt.xlabel("Distance")
+    plt.ylabel("Group")
+    return fig
+
 def plot_heatmap(stats, z):
-    vmin = 0 if z == "p_val" else np.nanmin(stats[z])
-    vmax = 1 if z == "p_val" else np.nanmax(stats[z])
-    cmap = "viridis_r" if z == "p_val" else "viridis"
+    vmin = 0 if "p_val" in z else np.nanmin(stats[z])
+    vmax = 1 if "p_val" in z else np.nanmax(stats[z])
+    cmap = "viridis_r" if "p_val" in z else "viridis"
+
+    # Heatmap data
     hm = mngs.pd.from_xyz(stats, x="col1", y="col2", z=z)
+
+    # Sorting
+    order = [
+        "NT_E-g_E",
+        "NT_E-g_R",
+        "NT_R-g_E",
+        "NT_R-g_R",
+    ]
+    hm = hm.reindex(columns=order, index=order)
+
+    # Main
     fig, ax = mngs.plt.subplots()
-    ax.imshow2d(hm, vmin=vmin, vmax=vmax, cmap=cmap)
+    ax.imshow2d(hm, vmin=vmin, vmax=vmax, cmap=cmap, xyz=True)
     ax.rotate_labels()
-    ax.set_xyt(None, None, f"{z}")
+    ax.set_xyt(None, None, z)
     ax.set_ticks(
         xvals="auto",
         xticks=hm.columns,
@@ -103,37 +300,74 @@ def main(phases_to_plot):
     )[0]
     df = mngs.io.load(lpath)
 
+    # Save directory
+    sdir = f"./{'_'.join(phases_to_plot)}/"
+
     # Verify balanced data
     df["n"] = 1
     df.groupby("group").agg({"n": "sum", "dist": ["mean", "min", "max"]})
+    df.group = df.group.replace(
+        {
+            "$g_E-NT_E$": "NT_E-g_E",
+            "$g_E-NT_R$": "NT_R-g_E",
+            "$g_R-NT_E$": "NT_E-g_R",
+            "$g_R-NT_R$": "NT_R-g_R",
+        }
+    )
 
-    # KDE plot
-    fig = plot_kde(df)
+    # Conditioning
+    df_all = df.copy()
+    df_in = df[df.match == 1]
+    df_out = df[df.match == 2]
 
-    # Statistical test
-    stats = perform_pairwise_statistical_test(df)
-    stats_in = perform_pairwise_statistical_test(df[df.match == 1])
-    stats_out = perform_pairwise_statistical_test(df[df.match == 2])
+    # Main
+    for match in ["all"] + CONFIG.MATCHES:
 
-    # Saving
-    sdir = f"./{'_'.join(phases_to_plot)}/"
-    mngs.io.save(fig, sdir + "kde.jpg")
-    mngs.io.save(stats, sdir + "stats.csv")
-    mngs.io.save(stats_in, sdir + "stats_in.csv")
-    mngs.io.save(stats_out, sdir + "stats_out.csv")
-    for metric in ["statistic", "p_val"]:
-        for obj, spath in [
-            (plot_heatmap(stats, metric), sdir + f"{metric}_heatmap.jpg"),
-            (
-                plot_heatmap(stats_in, metric),
-                sdir + f"{metric}_heatmap_in.jpg",
-            ),
-            (
-                plot_heatmap(stats_out, metric),
-                sdir + f"{metric}_heatmap_out.jpg",
-            ),
-        ]:
-            mngs.io.save(obj, spath)
+        df_match = {
+            "1": df_in,
+            "2": df_out,
+            "all": df_all,
+        }[str(match)]
+
+        match_str = CONFIG.MATCHES_STR[str(match)]
+
+        # KDE plot
+        fig_kde = plot_kde(df_match)
+        mngs.io.save(fig_kde, sdir + f"kde_{match_str}.jpg")
+
+        # Box plot
+        fig_box = plot_box(df_match)
+        mngs.io.save(fig_box, sdir + f"box_{match_str}.jpg")
+
+        # # Hist plot
+        # fig_hist = plot_hist(df_match)
+        # mngs.io.save(fig_hist, sdir + f"hist_{match_str}.jpg")
+
+        # Violin plot
+        fig_violin = plot_violin(df_match)
+        mngs.io.save(fig_violin, sdir + f"violin_{match_str}.jpg")
+
+        # Joy plot
+        fig_joy = plot_joy(df_match)
+        mngs.io.save(fig_joy, sdir + f"joy_{match_str}.jpg")
+
+        # Statistical test (Wilcoxon, Brunner-Munzel, and KS)
+        stats = perform_pairwise_statistical_test(df_match)
+        mngs.io.save(stats, sdir + f"stats_{match_str}.csv")
+
+        for test_type in ["wc", "bm", "ks"]:
+
+            # P-values (uncorrected)
+            fig_hm_pval = plot_heatmap(stats, f"p_val_unc_{test_type}")
+            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_unc_{match_str}.jpg")
+
+            # P-values
+            fig_hm_pval = plot_heatmap(stats, f"p_val_{test_type}")
+            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_{match_str}.jpg")
+
+            # Statistics
+            fig_hm_stat = plot_heatmap(stats, f"statistic_{test_type}")
+            mngs.io.save(fig_hm_stat, sdir + f"heatmap_{test_type}_stat_{match_str}.jpg")
 
 
 if __name__ == "__main__":
