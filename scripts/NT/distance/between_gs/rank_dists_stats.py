@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 15:45:13 (ywatanabe)"
+# Time-stamp: "2024-09-29 16:31:35 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -40,10 +40,9 @@ ORDER = [f"NT_{p1[0]}-g_{p2[0]}" for p1, p2 in product(CONFIG.PHASES.keys(), CON
 
 def rename_groups(df):
     phases = [p[0] for p in CONFIG.PHASES.keys()]
-    combinations = list(itertools.product(phases, repeat=2))
 
     replacements = {}
-    for g, nt in combinations:
+    for g, nt in list(itertools.product(phases, repeat=2)):
         key1 = f"$g_{g}-NT_{nt}$"
         key2 = f"g_{g}-NT_{nt}"
         value = f"NT_{nt}-g_{g}"
@@ -229,7 +228,8 @@ def plot_heatmap(stats, z):
     hm = mngs.pd.from_xyz(stats, x="col1", y="col2", z=z)
 
     # Sorting
-    hm = hm.reindex(columns=ORDER, index=ORDER)
+    order = mngs.gen.search(hm.columns, ORDER)[1]
+    hm = hm.reindex(columns=order, index=order)
 
     # Main
     fig, ax = mngs.plt.subplots()
