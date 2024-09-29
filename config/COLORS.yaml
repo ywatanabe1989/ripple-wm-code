@@ -14,6 +14,10 @@ COLORS:
   eSWR_vs_rSWR: "pink"
   eSWR_vs_eSWR: "blue"
   rSWR_vs_rSWR: "red"
-  rSWR_vs_vOR: "orange"    
+  rSWR_vs_vOR: "orange"
+  NT_E-g_E: "blue"
+  NT_E-g_R: "light_blue"
+  NT_R-g_E: "pink"
+  NT_R-g_R: "red"
 
       

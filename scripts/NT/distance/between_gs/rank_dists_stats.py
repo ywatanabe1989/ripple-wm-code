@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 14:44:46 (ywatanabe)"
+# Time-stamp: "2024-09-29 15:15:27 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -32,6 +32,12 @@ mngs.pd.ignore_SettingWithCopyWarning()
 
 """Functions & Classes"""
 
+ORDER = [
+    "NT_E-g_E",
+    "NT_E-g_R",
+    "NT_R-g_E",
+    "NT_R-g_R",
+]
 
 def run_stats_test(df):
     """
@@ -114,27 +120,29 @@ def run_stats_test(df):
 
 def plot_kde(df):
     fig, ax = mngs.plt.subplots()
-    hue_order = [
-        "NT_E-g_E",
-        "NT_E-g_R",
-        "NT_R-g_E",
-        "NT_R-g_R",
-    ]
-    hue_colors = {
-        "NT_E-g_E": CC["blue"],
-        "NT_E-g_R": CC["light_blue"],
-        "NT_R-g_E": CC["pink"],
-        "NT_R-g_R": CC["red"],
-    }
+    # hue_order = [
+    #     "NT_E-g_E",
+    #     "NT_E-g_R",
+    #     "NT_R-g_E",
+    #     "NT_R-g_R",
+    # ]
+    # hue_colors = {
+    #     "NT_E-g_E": CC["blue"],
+    #     "NT_E-g_R": CC["light_blue"],
+    #     "NT_R-g_E": CC["pink"],
+    #     "NT_R-g_R": CC["red"],
+    # }
 
     ax.sns_kdeplot(
         data=df,
         x="dist",
         hue="group",
-        hue_order=hue_order,
-        hue_colors=hue_colors,
+        hue_order=ORDER,
+        hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
+        # hue_order=hue_order,
+        # hue_colors=hue_colors,
         xlim=(df.dist.min(), df.dist.max()),
-        cumulative=True,
+        cumulative=False,
         id="_".join(phases_to_plot),
     )
     ax.legend()
@@ -142,18 +150,18 @@ def plot_kde(df):
 
 def plot_box(df):
     fig, ax = mngs.plt.subplots()
-    hue_order = [
-        "NT_E-g_E",
-        "NT_E-g_R",
-        "NT_R-g_E",
-        "NT_R-g_R",
-    ]
-    hue_colors = {
-        "NT_E-g_E": CC["blue"],
-        "NT_E-g_R": CC["light_blue"],
-        "NT_R-g_E": CC["pink"],
-        "NT_R-g_R": CC["red"],
-    }
+    # hue_order = [
+    #     "NT_E-g_E",
+    #     "NT_E-g_R",
+    #     "NT_R-g_E",
+    #     "NT_R-g_R",
+    # ]
+    # hue_colors = {
+    #     "NT_E-g_E": CC["blue"],
+    #     "NT_E-g_R": CC["light_blue"],
+    #     "NT_R-g_E": CC["pink"],
+    #     "NT_R-g_R": CC["red"],
+    # }
 
     ax.sns_boxplot(
         data=df,
@@ -162,8 +170,10 @@ def plot_box(df):
         # hue_order=hue_order,
         # hue_colors=hue_colors,
         x="group",
-        order=hue_order,
-        palette=hue_colors,
+        hue_order=ORDER,
+        hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
+        # order=hue_order,
+        # palette=hue_colors,
         # strip=True,
         id="_".join(phases_to_plot),
     )
@@ -241,26 +251,29 @@ def plot_box(df):
 
 def plot_violin(df):
     fig, ax = mngs.plt.subplots()
-    hue_order = [
-        "NT_E-g_E",
-        "NT_E-g_R",
-        "NT_R-g_E",
-        "NT_R-g_R",
-    ]
-    hue_colors = {
-        "NT_E-g_E": CC["blue"],
-        "NT_E-g_R": CC["light_blue"],
-        "NT_R-g_E": CC["pink"],
-        "NT_R-g_R": CC["red"],
-    }
+    # hue_order = [
+    #     "NT_E-g_E",
+    #     "NT_E-g_R",
+    #     "NT_R-g_E",
+    #     "NT_R-g_R",
+    # ]
+    # hue_colors = {
+    #     "NT_E-g_E": CC["blue"],
+    #     "NT_E-g_R": CC["light_blue"],
+    #     "NT_R-g_E": CC["pink"],
+    #     "NT_R-g_R": CC["red"],
+    # }
 
     ax.sns_violinplot(
         data=df,
         y="dist",
         hue="group",
-        hue_order=hue_order,
-        hue_colors=hue_colors,
-        palette=hue_colors,
+        hue_order=ORDER,
+        hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
+        palette={k: CC[CONFIG.COLORS[k]] for k in ORDER},
+        # hue_order=hue_order,
+        # hue_colors=hue_colors,
+        # palette=hue_colors,
         split=True,
         inner="quart",
         id="_".join(phases_to_plot),
@@ -270,13 +283,15 @@ def plot_violin(df):
 
 
 def plot_joy(df):
-    group_order = ["NT_E-g_E", "NT_E-g_R", "NT_R-g_E", "NT_R-g_R"]
-    color_map = {
-        "NT_E-g_E": CC["blue"],
-        "NT_E-g_R": CC["light_blue"],
-        "NT_R-g_E": CC["pink"],
-        "NT_R-g_R": CC["red"]
-    }
+    # group_order = ["NT_E-g_E", "NT_E-g_R", "NT_R-g_E", "NT_R-g_R"]
+    # color_map = {
+    #     "NT_E-g_E": CC["blue"],
+    #     "NT_E-g_R": CC["light_blue"],
+    #     "NT_R-g_E": CC["pink"],
+    #     "NT_R-g_R": CC["red"]
+    # }
+    group_order = ORDER
+    color_map = {k: CC[CONFIG.COLORS[k]] for k in ORDER}
     colors = [color_map[group] for group in group_order]
 
     fig, axes = joypy.joyplot(
@@ -305,13 +320,13 @@ def plot_heatmap(stats, z):
     hm = mngs.pd.from_xyz(stats, x="col1", y="col2", z=z)
 
     # Sorting
-    order = [
-        "NT_E-g_E",
-        "NT_E-g_R",
-        "NT_R-g_E",
-        "NT_R-g_R",
-    ]
-    hm = hm.reindex(columns=order, index=order)
+    # order = [
+    #     "NT_E-g_E",
+    #     "NT_E-g_R",
+    #     "NT_R-g_E",
+    #     "NT_R-g_R",
+    # ]
+    hm = hm.reindex(columns=ORDER, index=ORDER)
 
     # Main
     fig, ax = mngs.plt.subplots()
