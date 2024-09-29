@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 15:40:19 (ywatanabe)"
+# Time-stamp: "2024-09-29 15:45:13 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -27,6 +27,7 @@ from itertools import product
 from scipy import stats
 from statsmodels.stats.multitest import fdrcorrection, multipletests
 import mngs.stats
+import itertools
 
 mngs.pd.ignore_SettingWithCopyWarning()
 
@@ -35,14 +36,23 @@ CONFIG = mngs.io.load_configs()
 
 """Functions & Classes"""
 
-# ORDER = [
-#     "NT_E-g_E",
-#     "NT_E-g_R",
-#     "NT_R-g_E",
-#     "NT_R-g_R",
-# ]
-
 ORDER = [f"NT_{p1[0]}-g_{p2[0]}" for p1, p2 in product(CONFIG.PHASES.keys(), CONFIG.PHASES.keys())]
+
+def rename_groups(df):
+    phases = [p[0] for p in CONFIG.PHASES.keys()]
+    combinations = list(itertools.product(phases, repeat=2))
+
+    replacements = {}
+    for g, nt in combinations:
+        key1 = f"$g_{g}-NT_{nt}$"
+        key2 = f"g_{g}-NT_{nt}"
+        value = f"NT_{nt}-g_{g}"
+        replacements[key1] = value
+        replacements[key2] = value
+        replacements[value] = value
+
+    df.group = df.group.replace(replacements)
+    return df
 
 def run_stats_test(df):
     """
@@ -159,19 +169,6 @@ def plot_box(df):
 
 def plot_hist(df):
     fig, ax = mngs.plt.subplots()
-    # hue_order = [
-    #     "NT_E-g_E",
-    #     "NT_E-g_R",
-    #     "NT_R-g_E",
-    #     "NT_R-g_R",
-    # ]
-    # hue_colors = {
-    #     "NT_E-g_E": CC["blue"],
-    #     "NT_E-g_R": CC["light_blue"],
-    #     "NT_R-g_E": CC["pink"],
-    #     "NT_R-g_R": CC["red"],
-    # }
-
     ax.sns_histplot(
         data=df,
         y="dist",
@@ -265,41 +262,11 @@ def main(phases_to_plot):
     sdir = f"./{'_'.join(phases_to_plot)}/"
 
     # Rename
-    # df.group = df.group.replace(
-    #     {
-    #         "$g_E-NT_E$": "NT_E-g_E",
-    #         "$g_E-NT_R$": "NT_R-g_E",
-    #         "$g_R-NT_E$": "NT_E-g_R",
-    #         "$g_R-NT_R$": "NT_R-g_R",
-    #     }
-    # )
-    import itertools
-
-    phases = ['F', 'E', 'M', 'R']
-    combinations = list(itertools.product(phases, repeat=2))
-
-    replacements = {}
-    for g, nt in combinations:
-        key1 = f"$g_{g}-NT_{nt}$"
-        key2 = f"g_{g}-NT_{nt}"
-        value = f"NT_{nt}-g_{g}"
-        replacements[key1] = value
-        replacements[key2] = value
-        replacements[value] = value
-
-    df.group = df.group.replace(replacements)
+    df = rename_groups(df)
 
     # Verify balanced data
     df["n"] = 1
     print(df.groupby("group").agg({"n": "sum", "dist": ["mean", "min", "max"]}))
-    # df.group = df.group.replace(
-    #     {
-    #         "$g_E-NT_E$": "NT_E-g_E",
-    #         "$g_E-NT_R$": "NT_R-g_E",
-    #         "$g_R-NT_E$": "NT_E-g_R",
-    #         "$g_R-NT_R$": "NT_R-g_R",
-    #     }
-    # )
 
     # Conditioning
     df_all = df.copy()
@@ -343,19 +310,18 @@ def main(phases_to_plot):
 
         for test_type in ["wc", "bm", "ks"]:
 
-            for correction_method in ["bonf", "fdr", "holm"]:
-                # P-values
-                fig_hm_pval = plot_heatmap(stats, f"p_val_{correction_method}_{test_type}")
-                mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval/{correction_method}_{match_str}.jpg")
-
             # P-values (Uncorrected)
             fig_hm_pval = plot_heatmap(stats, f"p_val_unc_{test_type}")
-            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_unc/{match_str}.jpg")
-
+            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}/pval_unc_{match_str}.jpg")
 
             # Statistics
             fig_hm_stat = plot_heatmap(stats, f"statistic_{test_type}")
-            mngs.io.save(fig_hm_stat, sdir + f"heatmap_{test_type}_stat/{match_str}.jpg")
+            mngs.io.save(fig_hm_stat, sdir + f"heatmap_{test_type}/stat_{match_str}.jpg")
+
+            for correction_method in ["bonf", "fdr", "holm"]:
+                # P-values
+                fig_hm_pval = plot_heatmap(stats, f"p_val_{correction_method}_{test_type}")
+                mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}/pval_{correction_method}_{match_str}.jpg")
 
 
 if __name__ == "__main__":
