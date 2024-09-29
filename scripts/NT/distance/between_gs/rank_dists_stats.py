@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 15:15:27 (ywatanabe)"
+# Time-stamp: "2024-09-29 15:40:19 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -30,14 +30,19 @@ import mngs.stats
 
 mngs.pd.ignore_SettingWithCopyWarning()
 
+"""CONFIG"""
+CONFIG = mngs.io.load_configs()
+
 """Functions & Classes"""
 
-ORDER = [
-    "NT_E-g_E",
-    "NT_E-g_R",
-    "NT_R-g_E",
-    "NT_R-g_R",
-]
+# ORDER = [
+#     "NT_E-g_E",
+#     "NT_E-g_R",
+#     "NT_R-g_E",
+#     "NT_R-g_R",
+# ]
+
+ORDER = [f"NT_{p1[0]}-g_{p2[0]}" for p1, p2 in product(CONFIG.PHASES.keys(), CONFIG.PHASES.keys())]
 
 def run_stats_test(df):
     """
@@ -120,19 +125,6 @@ def run_stats_test(df):
 
 def plot_kde(df):
     fig, ax = mngs.plt.subplots()
-    # hue_order = [
-    #     "NT_E-g_E",
-    #     "NT_E-g_R",
-    #     "NT_R-g_E",
-    #     "NT_R-g_R",
-    # ]
-    # hue_colors = {
-    #     "NT_E-g_E": CC["blue"],
-    #     "NT_E-g_R": CC["light_blue"],
-    #     "NT_R-g_E": CC["pink"],
-    #     "NT_R-g_R": CC["red"],
-    # }
-
     ax.sns_kdeplot(
         data=df,
         x="dist",
@@ -150,106 +142,22 @@ def plot_kde(df):
 
 def plot_box(df):
     fig, ax = mngs.plt.subplots()
-    # hue_order = [
-    #     "NT_E-g_E",
-    #     "NT_E-g_R",
-    #     "NT_R-g_E",
-    #     "NT_R-g_R",
-    # ]
-    # hue_colors = {
-    #     "NT_E-g_E": CC["blue"],
-    #     "NT_E-g_R": CC["light_blue"],
-    #     "NT_R-g_E": CC["pink"],
-    #     "NT_R-g_R": CC["red"],
-    # }
-
-    ax.sns_boxplot(
-        data=df,
-        y="dist",
-        # hue="group",
-        # hue_order=hue_order,
-        # hue_colors=hue_colors,
-        x="group",
-        hue_order=ORDER,
-        hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
-        # order=hue_order,
-        # palette=hue_colors,
-        # strip=True,
-        id="_".join(phases_to_plot),
-    )
+    try:
+        ax.sns_boxplot(
+            data=df,
+            y="dist",
+            x="group",
+            hue_order=ORDER,
+            hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
+            id="_".join(phases_to_plot),
+        )
+    except Exception as e:
+        print(e)
+        __import__("ipdb").set_trace()
     ax.legend()
     return fig
 
-# def plot_hist(df):
-#     fig, ax = mngs.plt.subplots()
-#     hue_order = [
-#         "NT_E-g_E",
-#         "NT_E-g_R",
-#         "NT_R-g_E",
-#         "NT_R-g_R",
-#     ]
-#     hue_colors = {
-#         "NT_E-g_E": CC["blue"],
-#         "NT_E-g_R": CC["light_blue"],
-#         "NT_R-g_E": CC["pink"],
-#         "NT_R-g_R": CC["red"],
-#     }
-
-#     ax.sns_histplot(
-#         data=df,
-#         y="dist",
-#         hue="group",
-#         hue_order=hue_order,
-#         hue_colors=hue_colors,
-#         id="_".join(phases_to_plot),
-#     )
-#     ax.legend()
-#     return fig
-
-# def plot_violin(df):
-#     fig, ax = mngs.plt.subplots()
-#     hue_order = [
-#         "NT_E-g_E",
-#         "NT_E-g_E_fake",
-#         "NT_E-g_R",
-#         "NT_E-g_R_fake",
-#         "NT_R-g_E",
-#         "NT_R-g_E_fake",
-#         "NT_R-g_R",
-#         "NT_R-g_R_fake",
-#     ]
-#     transparent_color = (1.,1.,1.,0.)
-#     hue_colors = {
-#         "NT_E-g_E": CC["blue"],
-#         "NT_E-g_E_fake": transparent_color,
-#         "NT_E-g_R": CC["light_blue"],
-#         "NT_E-g_R_fake": transparent_color,
-#         "NT_R-g_E": CC["pink"],
-#         "NT_R-g_E_fake": transparent_color,
-#         "NT_R-g_R": CC["red"],
-#         "NT_R-g_R_fake": transparent_color,
-#     }
-
-#     df_fake = df.copy()
-#     df_fake["dist"] = np.nan
-#     df_fake['group'] = df_fake['group'] + "_fake"
-#     combined_df = pd.concat([df, df_fake])
-
-#     ax.sns_violinplot(
-#         data=combined_df,
-#         y="dist",
-#         hue="group",
-#         hue_order=hue_order,
-#         hue_colors=hue_colors,
-#         palette=hue_colors,
-#         split=True,
-#         # inner="quart",
-#         id="_".join(phases_to_plot),
-#     )
-#     ax.legend()
-#     return fig
-
-def plot_violin(df):
+def plot_hist(df):
     fig, ax = mngs.plt.subplots()
     # hue_order = [
     #     "NT_E-g_E",
@@ -264,6 +172,20 @@ def plot_violin(df):
     #     "NT_R-g_R": CC["red"],
     # }
 
+    ax.sns_histplot(
+        data=df,
+        y="dist",
+        hue="group",
+        hue_order=ORDER,
+        hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
+        id="_".join(phases_to_plot),
+    )
+    ax.legend()
+    return fig
+
+
+def plot_violin(df):
+    fig, ax = mngs.plt.subplots()
     ax.sns_violinplot(
         data=df,
         y="dist",
@@ -271,9 +193,6 @@ def plot_violin(df):
         hue_order=ORDER,
         hue_colors={k: CC[CONFIG.COLORS[k]] for k in ORDER},
         palette={k: CC[CONFIG.COLORS[k]] for k in ORDER},
-        # hue_order=hue_order,
-        # hue_colors=hue_colors,
-        # palette=hue_colors,
         split=True,
         inner="quart",
         id="_".join(phases_to_plot),
@@ -283,13 +202,6 @@ def plot_violin(df):
 
 
 def plot_joy(df):
-    # group_order = ["NT_E-g_E", "NT_E-g_R", "NT_R-g_E", "NT_R-g_R"]
-    # color_map = {
-    #     "NT_E-g_E": CC["blue"],
-    #     "NT_E-g_R": CC["light_blue"],
-    #     "NT_R-g_E": CC["pink"],
-    #     "NT_R-g_R": CC["red"]
-    # }
     group_order = ORDER
     color_map = {k: CC[CONFIG.COLORS[k]] for k in ORDER}
     colors = [color_map[group] for group in group_order]
@@ -320,12 +232,6 @@ def plot_heatmap(stats, z):
     hm = mngs.pd.from_xyz(stats, x="col1", y="col2", z=z)
 
     # Sorting
-    # order = [
-    #     "NT_E-g_E",
-    #     "NT_E-g_R",
-    #     "NT_R-g_E",
-    #     "NT_R-g_R",
-    # ]
     hm = hm.reindex(columns=ORDER, index=ORDER)
 
     # Main
@@ -358,17 +264,42 @@ def main(phases_to_plot):
     # Save directory
     sdir = f"./{'_'.join(phases_to_plot)}/"
 
+    # Rename
+    # df.group = df.group.replace(
+    #     {
+    #         "$g_E-NT_E$": "NT_E-g_E",
+    #         "$g_E-NT_R$": "NT_R-g_E",
+    #         "$g_R-NT_E$": "NT_E-g_R",
+    #         "$g_R-NT_R$": "NT_R-g_R",
+    #     }
+    # )
+    import itertools
+
+    phases = ['F', 'E', 'M', 'R']
+    combinations = list(itertools.product(phases, repeat=2))
+
+    replacements = {}
+    for g, nt in combinations:
+        key1 = f"$g_{g}-NT_{nt}$"
+        key2 = f"g_{g}-NT_{nt}"
+        value = f"NT_{nt}-g_{g}"
+        replacements[key1] = value
+        replacements[key2] = value
+        replacements[value] = value
+
+    df.group = df.group.replace(replacements)
+
     # Verify balanced data
     df["n"] = 1
-    df.groupby("group").agg({"n": "sum", "dist": ["mean", "min", "max"]})
-    df.group = df.group.replace(
-        {
-            "$g_E-NT_E$": "NT_E-g_E",
-            "$g_E-NT_R$": "NT_R-g_E",
-            "$g_R-NT_E$": "NT_E-g_R",
-            "$g_R-NT_R$": "NT_R-g_R",
-        }
-    )
+    print(df.groupby("group").agg({"n": "sum", "dist": ["mean", "min", "max"]}))
+    # df.group = df.group.replace(
+    #     {
+    #         "$g_E-NT_E$": "NT_E-g_E",
+    #         "$g_E-NT_R$": "NT_R-g_E",
+    #         "$g_R-NT_E$": "NT_E-g_R",
+    #         "$g_R-NT_R$": "NT_R-g_R",
+    #     }
+    # )
 
     # Conditioning
     df_all = df.copy()
@@ -388,43 +319,43 @@ def main(phases_to_plot):
 
         # KDE plot
         fig_kde = plot_kde(df_match)
-        mngs.io.save(fig_kde, sdir + f"kde_{match_str}.jpg")
+        mngs.io.save(fig_kde, sdir + f"kde/{match_str}.jpg")
 
         # Box plot
         fig_box = plot_box(df_match)
-        mngs.io.save(fig_box, sdir + f"box_{match_str}.jpg")
+        mngs.io.save(fig_box, sdir + f"box/{match_str}.jpg")
 
-        # # Hist plot
-        # fig_hist = plot_hist(df_match)
-        # mngs.io.save(fig_hist, sdir + f"hist_{match_str}.jpg")
+        # Hist plot
+        fig_hist = plot_hist(df_match)
+        mngs.io.save(fig_hist, sdir + f"hist/{match_str}.jpg")
 
         # Violin plot
         fig_violin = plot_violin(df_match)
-        mngs.io.save(fig_violin, sdir + f"violin_{match_str}.jpg")
+        mngs.io.save(fig_violin, sdir + f"violin/{match_str}.jpg")
 
         # Joy plot
         fig_joy = plot_joy(df_match)
-        mngs.io.save(fig_joy, sdir + f"joy_{match_str}.jpg")
+        mngs.io.save(fig_joy, sdir + f"joy/{match_str}.jpg")
 
         # Statistical test (Wilcoxon, Brunner-Munzel, and KS)
         stats = run_stats_test(df_match)
-        mngs.io.save(stats, sdir + f"stats_{match_str}.csv")
+        mngs.io.save(stats, sdir + f"stats/{match_str}.csv")
 
         for test_type in ["wc", "bm", "ks"]:
 
             for correction_method in ["bonf", "fdr", "holm"]:
                 # P-values
                 fig_hm_pval = plot_heatmap(stats, f"p_val_{correction_method}_{test_type}")
-                mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_{correction_method}_{match_str}.jpg")
+                mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval/{correction_method}_{match_str}.jpg")
 
             # P-values (Uncorrected)
             fig_hm_pval = plot_heatmap(stats, f"p_val_unc_{test_type}")
-            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_unc_{match_str}.jpg")
+            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}_pval_unc/{match_str}.jpg")
 
 
             # Statistics
             fig_hm_stat = plot_heatmap(stats, f"statistic_{test_type}")
-            mngs.io.save(fig_hm_stat, sdir + f"heatmap_{test_type}_stat_{match_str}.jpg")
+            mngs.io.save(fig_hm_stat, sdir + f"heatmap_{test_type}_stat/{match_str}.jpg")
 
 
 if __name__ == "__main__":
@@ -432,8 +363,9 @@ if __name__ == "__main__":
         sys, plt, verbose=False, line_width=1.0, np=np, agg=True
     )
     for phases_to_plot in [
-        ["Encoding", "Retrieval"],
         ["Fixation", "Encoding", "Maintenance", "Retrieval"],
+        ["Encoding", "Retrieval"],
+
     ]:
         main(phases_to_plot)
     mngs.gen.close(CONFIG, verbose=False, notify=False)

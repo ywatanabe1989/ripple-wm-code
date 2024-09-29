@@ -20,4 +20,23 @@ COLORS:
   NT_R-g_E: "pink"
   NT_R-g_R: "red"
 
-      
+  # Colors below are not considered well
+  # NT_E-g_E: "blue"   
+  NT_E-g_F: "gray"   
+  NT_E-g_M: "green"  
+  # NT_E-g_R: "red"
+  
+  NT_F-g_E: "blue"
+  NT_F-g_F: "gray"
+  NT_F-g_M: "green"
+  NT_F-g_R: "red"
+  
+  NT_M-g_E: "blue"  
+  NT_M-g_F: "gray"  
+  NT_M-g_M: "green" 
+  NT_M-g_R: "red"  
+    
+  # NT_R-g_E: "blue"  
+  NT_R-g_F: "gray"  
+  NT_R-g_M: "green" 
+  # NT_R-g_R: "red"   
