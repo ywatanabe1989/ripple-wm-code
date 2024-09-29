@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 16:31:35 (ywatanabe)"
+# Time-stamp: "2024-09-29 16:37:58 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -33,10 +33,100 @@ mngs.pd.ignore_SettingWithCopyWarning()
 
 """CONFIG"""
 CONFIG = mngs.io.load_configs()
+ORDER = [
+    f"NT_{p1[0]}-g_{p2[0]}"
+    for p1, p2 in product(CONFIG.PHASES.keys(), CONFIG.PHASES.keys())
+]
 
 """Functions & Classes"""
 
-ORDER = [f"NT_{p1[0]}-g_{p2[0]}" for p1, p2 in product(CONFIG.PHASES.keys(), CONFIG.PHASES.keys())]
+
+def main(phases_to_plot):
+    # Loading
+    lpath = mngs.io.glob(
+        f"./scripts/NT/distance/between_gs/to_rank_dists/{'_'.join(phases_to_plot)}/dist_ca1.csv",
+        ensure_one=True,
+    )[0]
+    df = mngs.io.load(lpath)
+
+    # Save directory
+    sdir = f"./{'_'.join(phases_to_plot)}/"
+
+    # Rename
+    df = rename_groups(df)
+
+    # Verify balanced data
+    df["n"] = 1
+    print(
+        df.groupby("group").agg({"n": "sum", "dist": ["mean", "min", "max"]})
+    )
+
+    # Conditioning
+    df_all = df.copy()
+    df_in = df[df.match == 1]
+    df_out = df[df.match == 2]
+
+    # Main
+    for match in ["all"] + CONFIG.MATCHES:
+
+        df_match = {
+            "1": df_in,
+            "2": df_out,
+            "all": df_all,
+        }[str(match)]
+
+        match_str = CONFIG.MATCHES_STR[str(match)]
+
+        # KDE plot
+        fig_kde = plot_kde(df_match)
+        mngs.io.save(fig_kde, sdir + f"kde/{match_str}.jpg")
+
+        # Box plot
+        fig_box = plot_box(df_match)
+        mngs.io.save(fig_box, sdir + f"box/{match_str}.jpg")
+
+        # Hist plot
+        fig_hist = plot_hist(df_match)
+        mngs.io.save(fig_hist, sdir + f"hist/{match_str}.jpg")
+
+        # Violin plot
+        fig_violin = plot_violin(df_match)
+        mngs.io.save(fig_violin, sdir + f"violin/{match_str}.jpg")
+
+        # Joy plot
+        fig_joy = plot_joy(df_match)
+        mngs.io.save(fig_joy, sdir + f"joy/{match_str}.jpg")
+
+        # Statistical test (Wilcoxon, Brunner-Munzel, and KS)
+        stats = run_stats_test(df_match)
+        mngs.io.save(stats, sdir + f"stats/{match_str}.csv")
+
+        for test_type in ["wc", "bm", "ks"]:
+
+            # P-values (Uncorrected)
+            fig_hm_pval = plot_heatmap(stats, f"p_val_unc_{test_type}")
+            mngs.io.save(
+                fig_hm_pval,
+                sdir + f"heatmap_{test_type}/pval_unc_{match_str}.jpg",
+            )
+
+            # Statistics
+            fig_hm_stat = plot_heatmap(stats, f"statistic_{test_type}")
+            mngs.io.save(
+                fig_hm_stat, sdir + f"heatmap_{test_type}/stat_{match_str}.jpg"
+            )
+
+            for correction_method in ["bonf", "fdr", "holm"]:
+                # P-values
+                fig_hm_pval = plot_heatmap(
+                    stats, f"p_val_{correction_method}_{test_type}"
+                )
+                mngs.io.save(
+                    fig_hm_pval,
+                    sdir
+                    + f"heatmap_{test_type}/pval_{correction_method}_{match_str}.jpg",
+                )
+
 
 def rename_groups(df):
     phases = [p[0] for p in CONFIG.PHASES.keys()]
@@ -52,6 +142,7 @@ def rename_groups(df):
 
     df.group = df.group.replace(replacements)
     return df
+
 
 def run_stats_test(df):
     """
@@ -85,7 +176,10 @@ def run_stats_test(df):
         else:
             statistic_wc, p_value_wc = stats.wilcoxon(x1, x2)
             bm_results = mngs.stats.brunner_munzel_test(x1, x2)
-            statistic_bm, p_value_bm = bm_results["w_statistic"], bm_results["p_value"]
+            statistic_bm, p_value_bm = (
+                bm_results["w_statistic"],
+                bm_results["p_value"],
+            )
             statistic_ks, p_value_ks = stats.ks_2samp(x1, x2)
 
         result = {
@@ -110,19 +204,21 @@ def run_stats_test(df):
             bonf_corrected = (results[col] * len(results)).clip(upper=1.0)
             col_corrected = f"{col}".replace("_unc", "_bonf")
             results[col_corrected] = bonf_corrected
-            mngs.pd.mv(results, col_corrected, i_col+1)
+            mngs.pd.mv(results, col_corrected, i_col + 1)
 
             # Benjamini-Hochberg FDR
             _, fdr_corrected = fdrcorrection(results[col])
             col_corrected = f"{col}".replace("_unc", "_fdr")
             results[col_corrected] = fdr_corrected
-            mngs.pd.mv(results, col_corrected, i_col+2)
+            mngs.pd.mv(results, col_corrected, i_col + 2)
 
             # Holm-Bonferroni
-            _, holm_corrected, _, _ = multipletests(results[col], method='holm')
+            _, holm_corrected, _, _ = multipletests(
+                results[col], method="holm"
+            )
             col_corrected = f"{col}".replace("_unc", "_holm")
             results[col_corrected] = holm_corrected
-            mngs.pd.mv(results, col_corrected, i_col+3)
+            mngs.pd.mv(results, col_corrected, i_col + 3)
 
     # Round all float columns
     for col in results.columns:
@@ -149,6 +245,7 @@ def plot_kde(df):
     ax.legend()
     return fig
 
+
 def plot_box(df):
     fig, ax = mngs.plt.subplots()
     try:
@@ -165,6 +262,7 @@ def plot_box(df):
         __import__("ipdb").set_trace()
     ax.legend()
     return fig
+
 
 def plot_hist(df):
     fig, ax = mngs.plt.subplots()
@@ -219,6 +317,7 @@ def plot_joy(df):
     plt.ylabel("Group")
     return fig
 
+
 def plot_heatmap(stats, z):
     vmin = 0 if "p_val" in z else np.nanmin(stats[z])
     vmax = 1 if "p_val" in z else np.nanmax(stats[z])
@@ -246,84 +345,6 @@ def plot_heatmap(stats, z):
     return fig
 
 
-def main(phases_to_plot):
-    """
-    phases_to_plot = ["Encoding", "Retrieval"]
-    """
-
-    # Loading
-    lpath = mngs.io.glob(
-        f"./scripts/NT/distance/between_gs/to_rank_dists/{'_'.join(phases_to_plot)}/dist_ca1.csv",
-        ensure_one=True,
-    )[0]
-    df = mngs.io.load(lpath)
-
-    # Save directory
-    sdir = f"./{'_'.join(phases_to_plot)}/"
-
-    # Rename
-    df = rename_groups(df)
-
-    # Verify balanced data
-    df["n"] = 1
-    print(df.groupby("group").agg({"n": "sum", "dist": ["mean", "min", "max"]}))
-
-    # Conditioning
-    df_all = df.copy()
-    df_in = df[df.match == 1]
-    df_out = df[df.match == 2]
-
-    # Main
-    for match in ["all"] + CONFIG.MATCHES:
-
-        df_match = {
-            "1": df_in,
-            "2": df_out,
-            "all": df_all,
-        }[str(match)]
-
-        match_str = CONFIG.MATCHES_STR[str(match)]
-
-        # KDE plot
-        fig_kde = plot_kde(df_match)
-        mngs.io.save(fig_kde, sdir + f"kde/{match_str}.jpg")
-
-        # Box plot
-        fig_box = plot_box(df_match)
-        mngs.io.save(fig_box, sdir + f"box/{match_str}.jpg")
-
-        # Hist plot
-        fig_hist = plot_hist(df_match)
-        mngs.io.save(fig_hist, sdir + f"hist/{match_str}.jpg")
-
-        # Violin plot
-        fig_violin = plot_violin(df_match)
-        mngs.io.save(fig_violin, sdir + f"violin/{match_str}.jpg")
-
-        # Joy plot
-        fig_joy = plot_joy(df_match)
-        mngs.io.save(fig_joy, sdir + f"joy/{match_str}.jpg")
-
-        # Statistical test (Wilcoxon, Brunner-Munzel, and KS)
-        stats = run_stats_test(df_match)
-        mngs.io.save(stats, sdir + f"stats/{match_str}.csv")
-
-        for test_type in ["wc", "bm", "ks"]:
-
-            # P-values (Uncorrected)
-            fig_hm_pval = plot_heatmap(stats, f"p_val_unc_{test_type}")
-            mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}/pval_unc_{match_str}.jpg")
-
-            # Statistics
-            fig_hm_stat = plot_heatmap(stats, f"statistic_{test_type}")
-            mngs.io.save(fig_hm_stat, sdir + f"heatmap_{test_type}/stat_{match_str}.jpg")
-
-            for correction_method in ["bonf", "fdr", "holm"]:
-                # P-values
-                fig_hm_pval = plot_heatmap(stats, f"p_val_{correction_method}_{test_type}")
-                mngs.io.save(fig_hm_pval, sdir + f"heatmap_{test_type}/pval_{correction_method}_{match_str}.jpg")
-
-
 if __name__ == "__main__":
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False, line_width=1.0, np=np, agg=True
@@ -331,7 +352,6 @@ if __name__ == "__main__":
     for phases_to_plot in [
         ["Fixation", "Encoding", "Maintenance", "Retrieval"],
         ["Encoding", "Retrieval"],
-
     ]:
         main(phases_to_plot)
     mngs.gen.close(CONFIG, verbose=False, notify=False)
