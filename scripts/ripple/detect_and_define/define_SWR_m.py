@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-12 04:49:40 (ywatanabe)"
+# Time-stamp: "2024-10-01 08:38:26 (ywatanabe)"
 # ./scripts/ripple/detect_and_define/define_SWR_m.py
 
 
@@ -131,7 +131,7 @@ def main_lpath(lpath_ripple, lpath_iEEG):
 
     # Saving
     spath = lpath_ripple.replace("SWR_p", "SWR_m")
-    mngs.io.save(df_m, spath)
+    mngs.io.save(df_m, spath, from_cwd=True)
 
 
 if __name__ == "__main__":

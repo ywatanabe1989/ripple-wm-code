@@ -1,0 +1,11 @@
+CLF:
+  N_REPEAT:
+    100
+  DEBUG_N_REPEAT:
+    2
+  N_CV:
+    10
+  DEBUG_N_CV:
+    2
+  N_FACTORS:
+    3

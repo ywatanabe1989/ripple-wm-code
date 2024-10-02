@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-15 20:14:59 (ywatanabe)"
+# Time-stamp: "2024-10-01 08:43:28 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/stats/time_course.py
 
 """This script does XYZ."""

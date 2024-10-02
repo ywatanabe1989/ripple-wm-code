@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-27 18:32:50 (ywatanabe)"
+# Time-stamp: "2024-09-30 21:48:43 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/clf/linearSVC.py
 
 """This script classifies neural trajectory of phases using SVC to check the existence of states in the NT space."""
@@ -38,36 +38,32 @@ warnings.simplefilter("ignore", RuntimeWarning)
 """Functions & Classes"""
 
 
-def main(phases_tasks):
+def main(phases_tasks, IS_DEBUG=False):
     # Params
-    CONFIG.N_REPEAT = 100
-    CONFIG.N_CV = 100
-    N_FACTORS = 3
     sdir = f"./{'_'.join(phases_tasks)}/"
 
     # Training and evaluation by each session in CA1 regions
     metrics_all, conf_mats_all = process_CA1_regions(
-        CONFIG, N_FACTORS, phases_tasks
+        CONFIG, phases_tasks
     )
 
     # Saving
     save(metrics_all, conf_mats_all, sdir)
 
 
-def process_CA1_regions(CONFIG, N_FACTORS, phases_tasks):
+def process_CA1_regions(CONFIG, phases_tasks):
     metrics_all = []
     conf_mats_all = []
 
     for conditions in [["match"], ["match", "set_size"]]:
         for ca1 in tqdm(CONFIG.ROI.CA1):
             NT = mngs.io.load(mngs.gen.replace(CONFIG.PATH.NT_Z, ca1))[
-                :, :N_FACTORS, :
+                :, :CONFIG.CLF.N_FACTORS, :
             ]
             GS = mngs.io.load(
                 mngs.gen.replace(CONFIG.PATH.NT_GS_SESSION, ca1)
-            ).iloc[:N_FACTORS]
+            ).iloc[:CONFIG.CLF.N_FACTORS]
             TI = mngs.io.load(mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, ca1))
-            # mngs.pd.merge_cols(TI, "match", name="condition")
             mngs.pd.merge_cols(TI, *conditions, name="condition")
 
             metrics, conf_mats = process_NT(NT, TI, GS, phases_tasks)
@@ -110,7 +106,7 @@ def calc_folds(NT, TI, GS, dummy, phases_tasks):
 
     # CV maintener
     rskf = RepeatedStratifiedKFold(
-        n_splits=CONFIG.N_CV, n_repeats=CONFIG.N_REPEAT, random_state=42
+        n_splits=CONFIG.CLF.N_CV, n_repeats=CONFIG.CLF.N_REPEAT, random_state=42
     )
 
     # Classifier
@@ -138,7 +134,7 @@ def train_and_eval_SVC(clf_name, rskf, X, T, C, TI, GS, phases_tasks):
         for train_index, test_index in rskf.split(X, y=T):
             clf = {
                 "DummyClassifier": DummyClassifier(
-                    strategy="stratified", random_state=42
+                    strategy="uniform", random_state=42
                 ),
                 "LinearSVC": LinearSVC(C=1.0, random_state=42),
             }[clf_name]
@@ -235,6 +231,7 @@ def save(metrics_all, conf_mats_all, sdir):
         ("bias_mean", "mean"),
         ("bias_std", "mean"),
     ]
+    cols_wb = ["-".join(col) for col in cols_wb]
     weights_and_biases = metrics_all[cols_wb].loc[("LinearSVC", "all")]
 
     mngs.io.save(
@@ -276,7 +273,7 @@ if __name__ == "__main__":
         ["Encoding", "Retrieval"],
         ["Fixation", "Encoding", "Maintenance", "Retrieval"],
     ]:
-        main(phases_tasks)
+        main(phases_tasks, IS_DEBUG=False)
     mngs.gen.close(CONFIG, verbose=False, notify=True)
 
 # EOF

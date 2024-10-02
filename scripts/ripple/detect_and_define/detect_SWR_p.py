@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-12 04:47:57 (ywatanabe)"
+# Time-stamp: "2024-10-01 08:37:47 (ywatanabe)"
 # ./scripts/ripple/detect_and_define/detect_SWR_p.py
 
 
@@ -131,10 +131,9 @@ def main_lpath(lpath_iEEG):
     df = add_firing_patterns(df)
 
     # Saving
-    mngs.io.save(df, eval(CONFIG.PATH.RIPPLE))
+    mngs.io.save(df, eval(CONFIG.PATH.RIPPLE), from_cwd=True)
     mngs.io.save(
-        (xx_r, fs_r),
-        eval(CONFIG.PATH.iEEG_RIPPLE_BAND),
+        (xx_r, fs_r), eval(CONFIG.PATH.iEEG_RIPPLE_BAND), from_cwd=True
     )
 
 

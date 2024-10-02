@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-29 16:37:58 (ywatanabe)"
+# Time-stamp: "2024-10-02 18:56:35 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/TDA/n_samples_stats.py
 
 
@@ -79,27 +79,28 @@ def main(phases_to_plot):
 
         # KDE plot
         fig_kde = plot_kde(df_match)
-        mngs.io.save(fig_kde, sdir + f"kde/{match_str}.jpg")
+        mngs.io.save(fig_kde, sdir + f"kde/jpg/{match_str}.jpg")
 
         # Box plot
         fig_box = plot_box(df_match)
-        mngs.io.save(fig_box, sdir + f"box/{match_str}.jpg")
+        mngs.io.save(fig_box, sdir + f"box/jpg/{match_str}.jpg")
 
         # Hist plot
         fig_hist = plot_hist(df_match)
-        mngs.io.save(fig_hist, sdir + f"hist/{match_str}.jpg")
+        mngs.io.save(fig_hist, sdir + f"hist/jpg/{match_str}.jpg")
 
         # Violin plot
         fig_violin = plot_violin(df_match)
-        mngs.io.save(fig_violin, sdir + f"violin/{match_str}.jpg")
+        mngs.io.save(fig_violin, sdir + f"violin/jpg/{match_str}.jpg")
 
         # Joy plot
         fig_joy = plot_joy(df_match)
-        mngs.io.save(fig_joy, sdir + f"joy/{match_str}.jpg")
+        mngs.io.save(fig_joy, sdir + f"joy/jpg/{match_str}.jpg")
 
         # Statistical test (Wilcoxon, Brunner-Munzel, and KS)
         stats = run_stats_test(df_match)
         mngs.io.save(stats, sdir + f"stats/{match_str}.csv")
+        __import__("ipdb").set_trace()
 
         for test_type in ["wc", "bm", "ks"]:
 
@@ -181,6 +182,8 @@ def run_stats_test(df):
                 bm_results["p_value"],
             )
             statistic_ks, p_value_ks = stats.ks_2samp(x1, x2)
+
+        __import__("ipdb").set_trace()
 
         result = {
             "col1": col1,

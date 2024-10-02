@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-27 17:32:13 (ywatanabe)"
+# Time-stamp: "2024-09-30 21:50:36 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/clf/_format.py
 
 """This script does XYZ."""
@@ -12,10 +12,27 @@ import mngs
 import numpy as np
 import pandas as pd
 from functools import partial
+from scipy import stats
 
 """CONFIG"""
 CONFIG = mngs.gen.load_configs()
 
+
+def agg_ci(x):
+    x = pd.to_numeric(x, errors='coerce')
+    x = x.dropna()
+    if len(x) < 2:
+        return np.nan, np.nan
+    mean = x.mean()
+    std = x.std()
+    n = len(x)
+    se = std / np.sqrt(n)
+    ci = stats.t.interval(0.95, n-1, loc=mean, scale=se)
+    return ci
+
+def agg_n(x):
+    x = pd.to_numeric(x, errors='coerce')
+    return x.count()
 
 def format_metrics_all(metrics_all):
     metrics_all = metrics_all.reset_index().rename(
@@ -27,8 +44,7 @@ def format_metrics_all(metrics_all):
     metrics_all = metrics_all.reset_index()
     metrics_all = metrics_all.groupby(["classifier", "condition"]).agg(
         {
-            "bACC_mean": ["mean", "std"],
-            "bACC_std": ["mean", "std"],
+            "bACC_mean": ["mean", agg_ci, agg_n],
             "weights_mean": ["mean"],
             "weights_std": ["mean"],
             "bias_mean": ["mean"],
@@ -42,6 +58,7 @@ def format_metrics_all(metrics_all):
             "effsize": ["mean"],
         }
     )
+    metrics_all.columns = ["-".join(col) for col in metrics_all.columns]
     return metrics_all
 
 
@@ -175,6 +192,8 @@ def aggregate_conditional_metrics(conditional_metrics, dummy):
                 "bACCs": [df["bACC_fold"]],
                 "bACC_mean": df["bACC_fold"].mean(),
                 "bACC_std": df["bACC_fold"].std(),
+                "bACC_ci": 1.96 * df["bACC_fold"].std() / np.sqrt(len(df["bACC_fold"])),
+                "bACC_nn": len(df["bACC_fold"]),
                 "conf_mat": df["conf_mat_fold"].sum().astype(int),
                 "classifier": df["classifier"].iloc[0],
             }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-21 20:02:52 (ywatanabe)"
+# Time-stamp: "2024-10-02 18:57:25 (ywatanabe)"
 # /ssh:ywatanabe@crest:/mnt/ssd/ripple-wm-code/scripts/ripple/NT/direction/kde_plot.py
 
 
@@ -221,23 +221,22 @@ def plot_kde_diff(dfs, fig, axes, _fig, _axes, MATCHES, set_size, SWR_TYPES):
         for i_comparison, comparison in enumerate(COMPARISONS):
             xx, kde_diff = calc_kde_diff(plotted, match_str, comparison, set_size, SWR_TYPES)
 
-            if kde_diff.any():
-                n = (~np.isnan(xx)).sum()
-                ax.plot_(
-                    np.hstack(np.array(xx)),
-                    np.hstack(kde_diff),
-                    label=f"{comparison} (n={n})",
-                    id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
-                    color=CC[CONFIG.COLORS[f"{comparison}"]],
-                    n=n,
-                )
+ff            n = (~np.isnan(xx)).sum()
+            ax.plot_(
+                xx=np.hstack(np.array(xx)),
+                yy=np.hstack(kde_diff),
+                label=f"{comparison} (n={n})",
+                id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
+                color=CC[CONFIG.COLORS[f"{comparison}"]],
+                n=n,
+            )
 
-                _ax.boxplot(
-                    np.hstack(kde_diff),
-                    label=f"{comparison}",
-                    id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
-                    positions=[i_comparison],
-                )
+            _ax.boxplot(
+                np.hstack(kde_diff),
+                label=f"{comparison}",
+                id=f"{match_str}-{comparison}-{set_size}-{SWR_TYPES[2]}",
+                positions=[i_comparison],
+            )
 
         ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
         ax.set_xlim(*XLIM[measure])

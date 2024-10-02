@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-12 21:54:38 (ywatanabe)"
+# Time-stamp: "2024-10-01 08:46:05 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/ripple/stats/time_course.py
 
 """This script does XYZ."""
@@ -67,7 +67,7 @@ def main():
         mm = filt.mean(axis=0)
         ss = filt.std(axis=0)
         ci = 1.96 * ss / np.sqrt(nn)
-        ax.plot_with_ci(tt, mm, ci, n=nn, label=label, id=label)
+        ax.plot_(xx=tt, yy=mm, ci=ci, n=nn, label=label, id=label)
         ax.legend()
     mngs.io.save(fig, "time_course.jpg")
 
