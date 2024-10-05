@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-05 18:45:41 (ywatanabe)"
-# /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
+# Time-stamp: "2024-10-05 21:03:43 (ywatanabe)"
+# /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/set_size_dependency_stats.py
 
-"""This script does XYZ."""
-
+"""Analyzes the relationship between set size and distance in MTL regions."""
 
 """Imports"""
 import itertools
+import re
 import sys
 from itertools import combinations
 
@@ -16,184 +16,277 @@ import matplotlib.pyplot as plt
 import mngs
 import numpy as np
 import pandas as pd
-import xarray as xr
-from scipy.linalg import norm
 import utils
+import xarray as xr
+from scipy import stats
+from scipy.linalg import norm
+
+# from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from statsmodels.stats.multitest import fdrcorrection
+from typing import List, Dict, Any, Tuple
 
 """Config"""
 CONFIG = mngs.gen.load_configs()
 
 """Functions & Classes"""
 
-# # This can add set_size to gs
-# MTL = "HIP"
-# lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
-# LPATHS_GS = mngs.io.glob(CONFIG.PATH.NT_GS_TRIAL)
-# LPATHS_GS = mngs.gen.search(["Session_01", "Session_02"], LPATHS)[1]
-# lpath_gs = LPATHS_GS[0]
-# parsed = utils.parse_lpath(lpath_gs)
-# GS = mngs.io.load(lpath_gs)
-# TI = mngs.io.load(mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, parsed))
-# # GS is xr
-# GS = GS.swap_dims({'trial': 'set_size'}).assign_coords(set_size=("set_size", TI["set_size"]))
+
+def parse_variable(variable: str) -> pd.Series:
+    """
+    Parse variable string to extract MTL, phase combination, and set size.
+
+    Example
+    -------
+    >>> parse_variable("ax_1_AMY_sns_boxplot_encoding-set_size_4")
+    pd.Series({'mtl': 'AMY', 'phase_combi': 'encoding', 'set_size': 4})
+
+    Parameters
+    ----------
+    variable : str
+        Input string to parse
+
+    Returns
+    -------
+    pd.Series
+        Parsed information
+    """
+    pattern = r"ax_(\d+)_(\w+)_sns_boxplot_(\w+)-set_size_(\d+)"
+    match = re.match(pattern, variable)
+    if match:
+        _, mtl, phase, set_size = match.groups()
+        return pd.Series(
+            {"mtl": mtl, "phase_combi": phase, "set_size": int(set_size)}
+        )
+    return pd.Series({"mtl": None, "phase_combi": None, "set_size": None})
 
 
+def apply_fdr_correction(results: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply FDR correction to p-values in the results DataFrame.
+
+    Parameters
+    ----------
+    results : pd.DataFrame
+        DataFrame containing statistical test results
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with added FDR-corrected p-values and stars
+    """
+    if "p_value" not in results.columns:
+        return results
+
+    _, fdr_corrected_pvals = fdrcorrection(results["p_value"])
+    results["fdr_p_value"] = fdr_corrected_pvals
+    results["fdr_stars"] = results["fdr_p_value"].apply(mngs.stats.p2stars)
+    return results
 
 
-# def load_gs():
-#     LPATHS = mngs.io.glob(CONFIG.PATH.NT_GS_TRIAL)
-#     LPATHS = mngs.gen.search(["Session_01", "Session_02"], LPATHS)[1]
-#     gs = {}
-#     for mtl in CONFIG.ROI.MTL.keys():
-#         lpaths_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS)[1]
-#         das = [mngs.io.load(lpath) for lpath in lpaths_mtl]
-#         __import__("ipdb").set_trace()
-#         gs[mtl] = xr.concat(das, dim="session", coords="minimal")
-#         print(f"n_lpaths_mtl: {mtl, len(lpaths_mtl)}")
-#     return gs
+def calculate_effect_size(groups: List[np.ndarray]) -> float:
+    """
+    Calculate effect size for given groups.
+
+    Parameters
+    ----------
+    groups : List[np.ndarray]
+        List of arrays containing data for each group
+
+    Returns
+    -------
+    float
+        Calculated effect size
+    """
+    group_means = [np.mean(group) for group in groups]
+    group_vars = [np.var(group, ddof=1) for group in groups]
+    pooled_sd = np.sqrt(np.mean(group_vars))
+    return max(group_means) / pooled_sd if pooled_sd != 0 else np.nan
 
 
-def load_gs(N_FACTORS=3):
+def run_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Run Kruskal-Wallis H-test on the data.
 
-    def load_corresponding_TI(lpath):
-        # Loading the corresponding trials info
-        parsed = utils.parse_lpath(lpath)
-        lpath_TI = mngs.gen.replace(CONFIG.PATH.TRIALS_INFO, parsed)
-        TI = mngs.io.load(lpath_TI)
-        return TI
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
 
-    LPATHS_GS = mngs.io.glob(CONFIG.PATH.NT_GS_TRIAL)
-    LPATHS_GS = mngs.gen.search(["Session_01", "Session_02"], LPATHS_GS)[1]
-    gs_agg = {}
-    for mtl in CONFIG.ROI.MTL.keys():
-        lpaths_gs_mtl = mngs.gen.search(CONFIG.ROI.MTL[mtl], LPATHS_GS)[1]
-        gss = []
-        for lpath_gs in lpaths_gs_mtl:
-            gs = mngs.io.load(lpath_gs)
-            gs = gs[:, :N_FACTORS, :]
-
-            # Loading the corresponding trials info
-            TI = load_corresponding_TI(lpath_gs)
-
-            # Adding set size information to gs gsta
-            gs = gs.swap_dims({'trial': 'set_size'})
-            gs = gs.assign_coords(set_size=("set_size", TI["set_size"]))
-
-            # Aggregation
-            gss.append(gs)
-
-        gs_agg[mtl] = gss
-
-        print(f"n_lpaths_mtl: {mtl, len(lpaths_gs_mtl)}")
-    return gs_agg
-
-
-
-def calc_distances_between_gs(gs_mtl):
-    phases = ["Fixation", "Encoding", "Maintenance", "Retrieval"]
-    phase_combinations = list(itertools.combinations(phases, 2))
-
-    distances = []
-    for phase1, phase2 in phase_combinations:
-
-        v1 = np.array(gs_mtl.sel(phase=phase1))
-        v2 = np.array(gs_mtl.sel(phase=phase2))
-
-        v1 = v1.reshape(-1, v1.shape[-1])
-        v2 = v2.reshape(-1, v2.shape[-1])
-
-        mask = ~(np.isnan(v1).any(axis=-1) + np.isnan(v2).any(axis=-1))
-
-        distance = norm(v1[mask] - v2[mask], axis=-1)
-
-        distances.append(distance)
-
-    return np.hstack(distances)
+    Returns
+    -------
+    pd.DataFrame
+        Results of Kruskal-Wallis H-test
+    """
+    results = {}
+    for mtl in df["mtl"].unique():
+        for phase_combi in df["phase_combi"].unique():
+            subset = df[
+                (df["mtl"] == mtl) & (df["phase_combi"] == phase_combi)
+            ].dropna(subset=["distance"])
+            groups = [
+                subset[subset["set_size"] == size]["distance"]
+                for size in [4, 6, 8]
+            ]
+            if all(len(group) > 0 for group in groups):
+                statistic, p_value = stats.kruskal(*groups)
+                effect_size = calculate_effect_size(groups)
+                sample_sizes = [len(group) for group in groups]
+                results[(mtl, phase_combi)] = {
+                    "statistic": statistic,
+                    "p_value": p_value,
+                    "effect_size": effect_size,
+                    "sample_sizes": sample_sizes,
+                    "dof": len(groups) - 1,
+                    "test_name": "Kruskal-Wallis H-test",
+                }
+    return pd.DataFrame(results).T
 
 
+def run_brunner_munzel(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Run Brunner-Munzel test on the data.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
+
+    Returns
+    -------
+    pd.DataFrame
+        Results of Brunner-Munzel test
+    """
+    results = {}
+    for mtl in df["mtl"].unique():
+        for phase_combi in df["phase_combi"].unique():
+            subset = df[
+                (df["mtl"] == mtl) & (df["phase_combi"] == phase_combi)
+            ].dropna(subset=["distance"])
+            for size1, size2 in itertools.combinations([4, 6, 8], 2):
+                x = subset[subset["set_size"] == size1]["distance"]
+                y = subset[subset["set_size"] == size2]["distance"]
+                if len(x) > 0 and len(y) > 0:
+                    statistic, p_value = stats.brunnermunzel(x, y)
+                    effect_size = abs(np.mean(x) - np.mean(y)) / np.sqrt(
+                        (np.var(x) + np.var(y)) / 2
+                    )
+                    results[(mtl, phase_combi, f"{size1}vs{size2}")] = {
+                        "statistic": statistic,
+                        "p_value": p_value,
+                        "effect_size": effect_size,
+                        "sample_sizes": [len(x), len(y)],
+                        "dof": len(x) + len(y) - 2,
+                        "test_name": "Brunner-Munzel test",
+                    }
+    return pd.DataFrame(results).T
 
 
-def plot_box(dist):
-    fig, ax = mngs.plt.subplots()
-    dist = dist[~dist.isna().any(axis=1)]
+def run_spearman_correlation(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Run Spearman correlation test on the data.
 
-    labels = ["HIP", "EC", "AMY"]
-    data = [dist[dist.MTL == ll].distance for ll in labels]
-    print([len(dd) for dd in data])  # [7338, 5016, 6198]
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
 
-    ax.boxplot(
-        data,
-        labels=labels,
-        showfliers=False,
-    )
-    ax.set_yscale("log")
-    return fig
+    Returns
+    -------
+    pd.DataFrame
+        Results of Spearman correlation test
+    """
+    results = {}
+    for mtl in df["mtl"].unique():
+        for phase_combi in df["phase_combi"].unique():
+            subset = df[
+                (df["mtl"] == mtl) & (df["phase_combi"] == phase_combi)
+            ].dropna(subset=["distance", "set_size"])
+            if len(subset) > 1:
+                corr, p_value = stats.spearmanr(
+                    subset["set_size"], subset["distance"]
+                )
+                results[(mtl, phase_combi)] = {
+                    "correlation": corr,
+                    "p_value": p_value,
+                    "sample_size": len(subset),
+                    "dof": len(subset) - 2,
+                    "test_name": "Spearman correlation",
+                }
+    return pd.DataFrame(results).T
 
-from itertools import combinations
 
-def gs2dists(gs):
-    dists = {}
-    for p1, p2 in combinations(CONFIG.PHASES.keys(), 2):
-        for set_size in CONFIG.SET_SIZES:
-            gs_1 = gs[..., gs.phase == p1].squeeze() # 50,3
-            gs_2 = gs[..., gs.phase == p2].squeeze() # 50,3
+def run_stats(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+    """
+    Run all statistical tests on the data and apply FDR correction.
 
-            indi_ss_1 = gs_1.set_size == set_size
-            indi_ss_2 = gs_2.set_size == set_size
-            assert (indi_ss_1 == indi_ss_2).all()
-            indi_ss = indi_ss_1
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
 
-            gs_1_ss = gs_1[indi_ss]
-            gs_2_ss = gs_2[indi_ss]
+    Returns
+    -------
+    Dict[str, pd.DataFrame]
+        Dictionary containing results of all statistical tests with FDR correction
+    """
+    stats_agg = {}
+    for test, run_fn in [
+        ("kw", run_kruskal_wallis),
+        ("bm", run_brunner_munzel),
+        ("corr", run_spearman_correlation),
+    ]:
+        stats = run_fn(df)
+        stats = apply_fdr_correction(stats)
+        stats["stars"] = stats["p_value"].apply(mngs.stats.p2stars)
+        stats = mngs.pd.round(stats)
+        stats_agg[test] = stats
+    return stats_agg
 
-            dists[f"{p1[0]}{p2[0]}-set_size_{set_size}"] = mngs.linalg.nannorm(gs_1_ss - gs_2_ss)
 
-    dists = mngs.pd.force_df(dists)
-    return dists
+def process_data(
+    file_path: str,
+) -> Tuple[pd.DataFrame, Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]:
+    """
+    Process the data and run statistical tests.
 
-def gs_all_to_dists(gs_all):
-    dists = mngs.gen.listed_dict()
-    for mtl in CONFIG.ROI.MTL.keys():
-        gs_mtl = gs_all[mtl]
-        for gs in gs_mtl:
-            dist = gs2dists(gs)
-            dists[mtl].append(dist)
+    Parameters
+    ----------
+    file_path : str
+        Path to the input CSV file
 
-    dists = {k: pd.concat(v) for k,v in dists.items()}
-    return dists
+    Returns
+    -------
+    Tuple[pd.DataFrame, Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]
+        Processed dataframe, linear stats results, and log10 stats results
+    """
+    df = mngs.io.load(file_path).melt()
+    parsed = df["variable"].apply(parse_variable)
+    df = pd.concat([df, parsed], axis=1)
+    df = df.drop(columns="variable")
+    df = df.rename(columns={"value": "distance"})
+
+    linear_stats = run_stats(df)
+    df["distance"] = np.log10(df["distance"] + 1e-5)
+    log10_stats = run_stats(df)
+
+    return df, linear_stats, log10_stats
+
 
 def main():
-    gs_all = load_gs()
+    """Main function to process data and save results."""
+    df, linear_stats, log10_stats = process_data(
+        "./scripts/NT/distance/between_gs/set_size_dependency_plot_box/box.csv"
+    )
 
-    dists = gs_all_to_dists(gs_all)
+    for key, value in linear_stats.items():
+        mngs.io.save(value, f"stats_{key}.csv")
 
-
-    fig, axes = mngs.plt.subplots(ncols=len(dists.keys()))
-    for ax, mtl in zip(axes, dists.keys()):
-        df = dists[mtl].melt()
-        df = df.rename(columns={
-            "variable": "phase_combi_set_size",
-            "value": "distance",
-        })
-        ax.sns_boxplot(
-            data=df,
-            x="phase_combi_set_size",
-            y="distance",
-            showfliers=False,
-        )
-        ax.set_xyt(None, None, mtl)
-        ax.rotate_labels(x=90, y=0)
-        ax.extend(y_ratio=0.5)
-        ax.set_yscale("log")
-
-    mngs.io.save(fig, "box.jpg")
-
-    # df = mngs.io.load("/tmp/fake-ywatanabe/temp.csv")
-
-    # __import__("ipdb").set_trace()
+    for key, value in log10_stats.items():
+        mngs.io.save(value, f"stats_{key}_log10.csv")
 
 
 if __name__ == "__main__":
+    np.random.seed(42)
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys,
         plt,

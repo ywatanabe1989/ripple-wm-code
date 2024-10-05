@@ -39,9 +39,6 @@ PATH:
   NT_Z:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session.npy"
 
-  # NT_GS:
-  #   f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs.csv"
-
   NT_GS_TRIAL:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_trial.pkl"
     
@@ -49,8 +46,14 @@ PATH:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_session.csv"
     
   NT_DIST_FROM_G:
-    "./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/from_g.csv"
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/from_g.csv"
 
+  NT_DIST_BETWEEN_GS_TRIAL:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_trial.csv"
+    
+  NT_DIST_BETWEEN_GS_SESSION:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_session.csv"
+    
   NT_BARCODE:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/TDA/barcode.csv"
 
