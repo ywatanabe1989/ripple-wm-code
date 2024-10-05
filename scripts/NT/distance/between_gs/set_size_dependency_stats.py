@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-05 21:03:43 (ywatanabe)"
+# Time-stamp: "2024-10-06 01:10:32 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/set_size_dependency_stats.py
 
 """Analyzes the relationship between set size and distance in MTL regions."""
@@ -271,18 +271,94 @@ def process_data(
 
     return df, linear_stats, log10_stats
 
+def get_mtl(roi):
+    for mtl in CONFIG.ROI.MTL.keys():
+        if any([roi == subregion for subregion in CONFIG.ROI.MTL[mtl]]):
+            return mtl
+
+def load_NT_dist_between_gs_trial_all():
+    LPATHS = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_TRIAL)
+
+    dfs = mngs.gen.listed_dict()
+    for lpath in LPATHS:
+        # Loading
+        df = mngs.io.load(lpath)
+        # # to rank if you lik
+
+        # MTL
+        parsed = utils.parse_lpath(lpath)
+        mtl = get_mtl(parsed["roi"])
+
+        # Aggregation
+        dfs[mtl].append(df)
+
+    # Formatting
+    for k,v in dfs.items():
+        dfs[k] = pd.concat(v)
+        dfs[k]["MTL"] = k
+    df = pd.concat(dfs.values())
+    return df
+
 
 def main():
-    """Main function to process data and save results."""
-    df, linear_stats, log10_stats = process_data(
-        "./scripts/NT/distance/between_gs/set_size_dependency_plot_box/box.csv"
-    )
+    df = load_NT_dist_between_gs_trial_all()
 
-    for key, value in linear_stats.items():
-        mngs.io.save(value, f"stats_{key}.csv")
+    # Formatting
+    df = mngs.pd.melt_cols(df, cols=["FE", "FM", "FR", "EM", "ER", "MR"])
+    df = df.rename(columns={"variable": "phase_combination", "value": "distance"})
 
-    for key, value in log10_stats.items():
-        mngs.io.save(value, f"stats_{key}_log10.csv")
+    # Plotting
+    MTL_REGIONS = CONFIG.ROI.MTL.keys()
+
+    fig, axes = mngs.plt.subplots(ncols=len(MTL_REGIONS), nrows=len(CONFIG.MATCHES_STR))
+    for i_mtl, mtl in enumerate(MTL_REGIONS):
+        for i_match, match_str in enumerate(CONFIG.MATCHES_STR.keys()):
+            ax = axes[i_mtl, i_match]
+            indi_MTL = df.MTL == mtl
+            indi_match = np.full(len(df), True) if match_str == "all" else df.match == int(match_str)
+
+            ax.sns_boxplot(
+                data=df[indi_MTL * indi_match],
+                x="phase_combination",
+                y="distance",
+            )
+    mngs.io.save(fig, "fig.jpg")
+
+
+    # condi = {
+    #     "MTL": df.MTL.unique(),
+    #     "set_size": CONFIG.SET_SIZES,
+    #     "match": CONFIG.MATCHES_STR.keys(),
+    #     "phase_combination": df.phase_combination.unique(),
+    # }
+
+    # # ll = pd.DataFrame([list(ll) for ll in mngs.gen.list_module_contents(mngs)])
+    # # mngs.gen.search("grid", ll[1])
+    # for cc in mngs.gen.yield_grids(condi):
+    #     if cc["MTL"]
+    #     print(cc)
+    # __import__("ipdb").set_trace()
+
+
+
+    # # Plotting
+    # fig, ax = mngs.plt.subplots()
+    # # ax.box(
+    # #     df,
+    # #     x="MTL",
+    # #     y=
+    # # )
+
+    # # """Main function to process data and save results."""
+    # # df, linear_stats, log10_stats = process_data(
+    # #     "./scripts/NT/distance/between_gs/set_size_dependency_plot_box/box.csv"
+    # # )
+
+    # # for key, value in linear_stats.items():
+    # #     mngs.io.save(value, f"stats_{key}.csv")
+
+    # # for key, value in log10_stats.items():
+    # #     mngs.io.save(value, f"stats_{key}_log10.csv")
 
 
 if __name__ == "__main__":

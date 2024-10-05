@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-05 21:49:36 (ywatanabe)"
+# Time-stamp: "2024-10-05 22:34:22 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/calc_dist_between_gs_trial.py
 
 """
@@ -130,7 +130,7 @@ def main(n_factors: int = 3) -> None:
     lpaths_gs = mngs.io.glob(CONFIG.PATH.NT_GS_TRIAL)
     for lpath_gs in lpaths_gs:
         dists_between_gs_trial, spath_dists_between_gs_trial = process_gs_file(lpath_gs, n_factors)
-        mngs.io.save(dists_between_gs_trial, spath_dists_between_gs_trial)
+        mngs.io.save(dists_between_gs_trial, spath_dists_between_gs_trial, from_cwd=True)
 
 if __name__ == '__main__':
     np.random.seed(42)

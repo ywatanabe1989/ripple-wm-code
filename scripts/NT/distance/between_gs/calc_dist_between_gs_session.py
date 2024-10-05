@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-05 21:57:06 (ywatanabe)"
+# Time-stamp: "2024-10-05 22:33:48 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/calc_dist_between_gs_session.py
 
 """
@@ -70,7 +70,7 @@ def process_gs_file(lpath_gs: str) -> None:
         dists = calc_dists_between_gs_session(gs)
         parsed = utils.parse_lpath(lpath_gs)
         spath = mngs.gen.replace(CONFIG.PATH.NT_DIST_BETWEEN_GS_SESSION, parsed)
-        mngs.io.save(dists, spath)
+        mngs.io.save(dists, spath, from_cwd=True)
     except Exception as e:
         print(f"Error processing file {lpath_gs}: {str(e)}")
 
