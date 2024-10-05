@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-09 08:45:47 (ywatanabe)"
+# Time-stamp: "2024-10-05 12:15:08 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/figures/01.py
 
 
@@ -86,19 +86,19 @@ def B():
 
 
 def C():
-    from scripts.NT.distance.from_O_of_MTL_regions import main
+    from scripts.NT.distance.from_O.MTL_regions import main
 
     main()
 
 
 def D():
-    from scripts.NT.distance.from_O_of_MTL_regions import main
+    from scripts.NT.distance.from_O.MTL_regions import main
 
     main()
 
 
 def E():
-    from scripts.NT.distance.between_gs_of_MTL_regions.py import main
+    from scripts.NT.distance.between_gs.MTL_regions.py import main
 
     main()
 
