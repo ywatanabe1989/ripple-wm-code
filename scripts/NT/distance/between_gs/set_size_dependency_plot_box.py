@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-06 20:34:06 (ywatanabe)"
+# Time-stamp: "2024-10-06 21:24:11 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -19,7 +19,7 @@ import pandas as pd
 import xarray as xr
 from scipy.linalg import norm
 import utils
-
+from copy import deepcopy
 
 """Config"""
 CONFIG = mngs.gen.load_configs()
@@ -30,33 +30,43 @@ def roi2mtl(roi):
         if roi in subregions:
             return mtl
 
-def main():
-    LPATHS_GS_MATCH_SET_SIZE = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_MATCH_SET_SIZE)
-
-    gs = []
-    for lpath_gs in LPATHS_GS_MATCH_SET_SIZE:
-        parsed = utils.parse_lpath(lpath_gs)
+def load_dists():
+    LPATHS_DIST_BETWEEN_GS_MATCH_SET_SIZE = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_MATCH_SET_SIZE)
+    dists = []
+    for lpath_dists in LPATHS_DIST_BETWEEN_GS_MATCH_SET_SIZE:
+        parsed = utils.parse_lpath(lpath_dists)
         if parsed["session"] not in CONFIG.SESSION.FIRST_TWO:
             continue
-        _gs = mngs.io.load(lpath_gs)
-        _gs["MTL"] = roi2mtl(parsed["roi"])
-        gs.append(_gs)
-    gs = pd.concat(gs)
+        _dists = mngs.io.load(lpath_dists)
+        _dists["MTL"] = roi2mtl(parsed["roi"])
+        for k,v in parsed.items():
+            _dists[k] = v
+        dists.append(_dists)
+    dists = pd.concat(dists)
+    return dists
 
-    __import__("ipdb").set_trace()
+def add_match_all(df):
+    df_match_all = deepcopy(df)
+    df_match_all["match"] = -1
+    df = pd.concat([df, df_match_all])
+    match_mapper = deepcopy(CONFIG.MATCHES_STR)
+    match_mapper["-1"] = match_mapper.pop("all")
+    df["match"] = df["match"].astype(str).replace(match_mapper)
+    return df
 
-    df = mngs.pd.melt_cols(gs, [f"{p1[0]}{p2[0]}" for p1,p2 in combinations(CONFIG.PHASES.keys(), 2)])
-    df = df.rename(columns={"variable": "phase_combination", "value": "distance"})
+def main():
+    # Loading
+    df = load_dists()
+    df = add_match_all(df)
 
+    # Plotting
     fig, axes = mngs.plt.subplots(ncols=len(CONFIG.MATCHES_STR), nrows=len(CONFIG.ROI.MTL.keys()))
     for i_mtl, mtl in enumerate(CONFIG.ROI.MTL.keys()):
-        for i_match, match in enumerate(CONFIG.MATCHES_STR.keys()):
+        for i_match, match_str in enumerate(CONFIG.MATCHES_STR.values()):
             ax = axes[i_match, i_mtl]
 
             indi_MTL = df.MTL == mtl
-            indi_match = np.full(len(df), True) if match == "all" else df.match == int(match)
-
-            match_str = CONFIG.MATCHES_STR[match]
+            indi_match = df.match == match_str
 
             ax.sns_boxplot(
                 df[indi_MTL * indi_match],
