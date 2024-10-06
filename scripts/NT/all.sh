@@ -31,6 +31,9 @@ main() {
         # Distance
         "./distance/from_O/MTL_regions.py"
         "./distance/between_gs/geometrics_medians.py"
+        "./distance/between_gs/calc_dist_between_gs_trial.py"
+        "./distance/between_gs/calc_dist_between_gs_match_set_size.py"
+        "./distance/between_gs/calc_dist_between_gs_session.py"
         "./distance/between_gs/calc_dists.py"
         "./distance/between_gs/to_rank_dists.py"
         "./distance/between_gs/rank_dists_stats.py"

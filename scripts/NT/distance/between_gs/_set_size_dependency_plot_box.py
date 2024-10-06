@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-06 20:34:06 (ywatanabe)"
+# Time-stamp: "2024-10-06 09:50:24 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -31,10 +31,10 @@ def roi2mtl(roi):
             return mtl
 
 def main():
-    LPATHS_GS_MATCH_SET_SIZE = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_MATCH_SET_SIZE)
+    LPATHS_GS_TRIAL = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_TRIAL)
 
     gs = []
-    for lpath_gs in LPATHS_GS_MATCH_SET_SIZE:
+    for lpath_gs in LPATHS_GS_TRIAL:
         parsed = utils.parse_lpath(lpath_gs)
         if parsed["session"] not in CONFIG.SESSION.FIRST_TWO:
             continue
@@ -42,8 +42,6 @@ def main():
         _gs["MTL"] = roi2mtl(parsed["roi"])
         gs.append(_gs)
     gs = pd.concat(gs)
-
-    __import__("ipdb").set_trace()
 
     df = mngs.pd.melt_cols(gs, [f"{p1[0]}{p2[0]}" for p1,p2 in combinations(CONFIG.PHASES.keys(), 2)])
     df = df.rename(columns={"variable": "phase_combination", "value": "distance"})

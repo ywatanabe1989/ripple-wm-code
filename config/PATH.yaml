@@ -41,6 +41,9 @@ PATH:
 
   NT_GS_TRIAL:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_trial.pkl"
+
+  NT_GS_MATCH_SET_SIZE:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_match_set_size.csv"
     
   NT_GS_SESSION:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_session.csv"
@@ -49,7 +52,10 @@ PATH:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/from_g.csv"
 
   NT_DIST_BETWEEN_GS_TRIAL:
-    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_trial.csv"
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_trial.pkl"
+
+  NT_DIST_BETWEEN_GS_MATCH_SET_SIZE:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_match_set_size.csv"
     
   NT_DIST_BETWEEN_GS_SESSION:
     f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_session.csv"
