@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-06 21:04:05 (ywatanabe)"
+# Time-stamp: "2024-10-07 19:49:08 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/calc_dist_between_gs_trial.py
 
 """
@@ -23,11 +23,7 @@ import mngs
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-try:
-    from scripts import utils
-except ImportError:
-    pass
+from scripts import utils
 
 def process_gs_file(lpath_gs: str, n_factors: int) -> pd.DataFrame:
     """
@@ -49,8 +45,8 @@ def process_gs_file(lpath_gs: str, n_factors: int) -> pd.DataFrame:
 
     dists = []
     for p1, p2 in combinations(CONFIG.PHASES.keys(), 2):
-        for match in CONFIG.MATCHES:
-            for set_size in CONFIG.SET_SIZES:
+        for match in ["all"] + CONFIG.MATCHES:
+            for set_size in ["all"] + CONFIG.SET_SIZES:
                 g1 = gs[f"{p1}-match_{match}_set_size_{set_size}"]
                 g2 = gs[f"{p2}-match_{match}_set_size_{set_size}"]
                 dist = mngs.linalg.euclidean_distance(g1, g2)

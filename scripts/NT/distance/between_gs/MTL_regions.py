@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-27 01:29:32 (ywatanabe)"
+# Time-stamp: "2024-10-07 18:13:34 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -57,21 +57,6 @@ def calc_distances_between_gs(gs_mtl):
         distances.append(distance)
 
     return np.hstack(distances)
-
-
-# def plot_box(dist):
-#     fig, ax = mngs.plt.subplots()
-#     dist = dist[~dist.isna().any(axis=1)]
-#     ax.sns_boxplot(
-#         data=dist,
-#         x="MTL",
-#         y="distance",
-#         showfliers=False,
-#         order=["HIP", "EC", "AMY"],
-#     )
-#     ax.set_yscale("log")
-#     return fig
-
 
 def plot_box(dist):
     fig, ax = mngs.plt.subplots()

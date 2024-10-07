@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-06 20:37:23 (ywatanabe)"
+# Time-stamp: "2024-10-07 18:06:45 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/geometrics_medians.py
 
 """
@@ -71,30 +71,40 @@ def calculate_gs(
             NT_phase, trial_info, n_factors
         )
 
-    gs_condition = pd.concat(
-        gs_condition, axis=1
-    )
-    gs_condition.columns = [
-        "-".join(cols) for cols in gs_condition.columns
-    ]
+    gs_condition = pd.concat(gs_condition, axis=1)
+    gs_condition.columns = ["-".join(cols) for cols in gs_condition.columns]
 
-    return {
+    gs_data = {
         "trial": gs_trial,
         "session": gs_session,
         "condition": gs_condition,
     }
 
+    for phase in CONFIG.PHASES.keys():
+        assert (gs_data["session"][phase] == gs_data["condition"][f"{phase}-match_all_set_size_all"]).all()
+
+    return gs_data
+
 
 def calculate_condition_medians(
-    NT_phase: np.ndarray, trial_info: pd.DataFrame, n_factors: int
+    NT_phase: np.ndarray, TI: pd.DataFrame, n_factors: int
 ) -> pd.DataFrame:
+
     condition_medians = {}
-    for match in CONFIG.MATCHES:
-        for set_size in CONFIG.SET_SIZES:
+    for match in ["all"] + CONFIG.MATCHES:
+        for set_size in ["all"] + CONFIG.SET_SIZES:
             condition_key = f"match_{match}_set_size_{set_size}"
-            condition_mask = (trial_info.match == match) & (
-                trial_info.set_size == set_size
+            match_mask = (
+                np.full(len(TI), True)
+                if match == "all"
+                else (TI.match == match)
             )
+            set_size_mask = (
+                np.full(len(TI), True)
+                if set_size == "all"
+                else (TI.set_size == set_size)
+            )
+            condition_mask = match_mask * set_size_mask
             NT_phase_condition = NT_phase[:, condition_mask, :]
             NT_phase_condition_flatten = NT_phase_condition.reshape(
                 n_factors, -1
@@ -105,9 +115,7 @@ def calculate_condition_medians(
     return pd.DataFrame(condition_medians)
 
 
-def save_gs(
-    gs_data: Dict[str, Any], lpath_NT: str
-) -> None:
+def save_gs(gs_data: Dict[str, Any], lpath_NT: str) -> None:
     save_trial_medians(gs_data["trial"], lpath_NT)
     save_session_medians(gs_data["session"], lpath_NT)
     save_condition_medians(gs_data["condition"], lpath_NT)
@@ -124,9 +132,7 @@ def save_trial_medians(
     gs_trial_xr["factor"] = [
         factor[0] for factor in gs_trial_xr["factor"].values
     ]
-    gs_trial_xr = gs_trial_xr.transpose(
-        "trial", "factor", "phase"
-    )
+    gs_trial_xr = gs_trial_xr.transpose("trial", "factor", "phase")
     spath_trial = mngs.gen.replace(
         CONFIG.PATH.NT_GS_TRIAL,
         utils.parse_lpath(lpath_NT),
@@ -141,9 +147,7 @@ def save_trial_medians(
 def save_session_medians(
     gs_session: Dict[str, np.ndarray], lpath_NT: str
 ) -> None:
-    n_factors = len(
-        gs_session[list(gs_session.keys())[0]]
-    )
+    n_factors = len(gs_session[list(gs_session.keys())[0]])
     gs_session_df = pd.DataFrame(
         gs_session,
         index=[f"factor_{factor_idx+1}" for factor_idx in range(n_factors)],
@@ -159,9 +163,7 @@ def save_session_medians(
     )
 
 
-def save_condition_medians(
-    gs_condition: pd.DataFrame, lpath_NT: str
-) -> None:
+def save_condition_medians(gs_condition: pd.DataFrame, lpath_NT: str) -> None:
     spath_condition = mngs.gen.replace(
         CONFIG.PATH.NT_GS_MATCH_SET_SIZE,
         utils.parse_lpath(lpath_NT),

@@ -22,32 +22,41 @@ main() {
     echo -e "$0 starts."
 
     local scripts=(
-        "./znorm_NT.py"
+        "./scripts/NT/znorm_NT.py"
+        "./scripts/NT/calc_geometrics_medians.py"
 
-        "./visualization/kde_8_factors.py"
-        "./visualization/scatter_kde.py" # suitable for set-size separations
-        "./visualization/umap_8_factors.py" # fxime; colors, supervised
+        # "./scripts/NT/visualization/kde_8_factors.py"
+        # "./scripts/NT/visualization/scatter_kde.py" # suitable for set-size separations
+        # "./scripts/NT/visualization/umap_8_factors.py" # fxime; colors, supervised
 
-        # Distance
-        "./distance/from_O/MTL_regions.py"
-        "./distance/between_gs/geometrics_medians.py"
-        "./distance/between_gs/calc_dist_between_gs_trial.py"
-        "./distance/between_gs/calc_dist_between_gs_match_set_size.py"
-        "./distance/between_gs/calc_dist_between_gs_session.py"
-        "./distance/between_gs/calc_dists.py"
-        "./distance/between_gs/to_rank_dists.py"
-        "./distance/between_gs/rank_dists_stats.py"
-        "./distance/between_gs/MTL_regions.py"
+        # Distance from O
+        "./scripts/NT/distance/from_O/MTL_regions.py"
 
-        # Classification
-        "./clf/linearSVC.py"
+        # Distance between geometrics medians
+        "./scripts/NT/distance/between_gs/MTL_regions.py"
+
+        "./scripts/NT/distance/between_gs/calc_dist/trial.py"
+        "./scripts/NT/distance/between_gs/calc_dist/match_set_size.py"
+        "./scripts/NT/distance/between_gs/calc_dist/session.py"
+
+        # Rank
+        "./scripts/NT/distance/between_gs/rank_dists/to_rank_dists.py"
+        "./scripts/NT/distance/between_gs/rank_dists/stats.py"
+
+        # # Set size dependency
+        # "./scripts/NT/distance/between_gs/set_size_dependency/plot_box.py"
+        # "./scripts/NT/distance/between_gs/set_size_dependency/stats.py"
+        # "./scripts/NT/distance/between_gs/set_size_dependency/plot_violin.py"
+
+        # # Classification
+        # "./scripts/NT/clf/linearSVC.py"
     )
 
     for script in "${scripts[@]}"; do
         echo -e "\n--------------------------------------------------------------------------------"
         echo "$script starts"
         echo -e "--------------------------------------------------------------------------------\n"
-        python "$SCRIPT_DIR"/"$script" 2>&1 | tee -a "$LOG_PATH"
+        python "$script" 2>&1 | tee -a "$LOG_PATH"
     done
 
     echo "$0 ends"

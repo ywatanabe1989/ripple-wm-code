@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-09-26 05:24:19 (ywatanabe)"
+# Time-stamp: "2024-10-07 19:29:04 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/to_rank_dists.py
 
 """This script does XYZ."""
@@ -80,7 +80,7 @@ def main():
     ]
 
     for phases_to_plot in PHASES_TO_PLOT:
-        df = mngs.io.load(f"./scripts/NT/distance/between_gs/calc_dists/{'_'.join(phases_to_plot)}/dist_ca1.csv")
+        df = mngs.io.load(f"./scripts/NT/distance/between_gs/calc_dist/{'_'.join(phases_to_plot)}/dist_ca1.csv")
         df = mngs.pd.merge_cols(df, "sub", "session", "roi", name="session_id")
         for sid in df.session_id.unique():
             indi_session = df.session_id == sid

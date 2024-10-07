@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-06 21:24:11 (ywatanabe)"
+# Time-stamp: "2024-10-07 19:45:03 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -30,7 +30,7 @@ def roi2mtl(roi):
         if roi in subregions:
             return mtl
 
-def load_dists():
+def load_dists_match_set_size():
     LPATHS_DIST_BETWEEN_GS_MATCH_SET_SIZE = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_MATCH_SET_SIZE)
     dists = []
     for lpath_dists in LPATHS_DIST_BETWEEN_GS_MATCH_SET_SIZE:
@@ -45,6 +45,21 @@ def load_dists():
     dists = pd.concat(dists)
     return dists
 
+# def load_dists_match_all_set_size():
+#     LPATHS_DIST_BETWEEN_GS_MATCH_SET_SIZE = mngs.gen.glob(CONFIG.PATH.NT_DIST_BETWEEN_GS_MATCH_SET_SIZE)
+#     dists = []
+#     for lpath_dists in LPATHS_DIST_BETWEEN_GS_MATCH_SET_SIZE:
+#         parsed = utils.parse_lpath(lpath_dists)
+#         if parsed["session"] not in CONFIG.SESSION.FIRST_TWO:
+#             continue
+#         _dists = mngs.io.load(lpath_dists)
+#         _dists["MTL"] = roi2mtl(parsed["roi"])
+#         for k,v in parsed.items():
+#             _dists[k] = v
+#         dists.append(_dists)
+#     dists = pd.concat(dists)
+#     return dists
+
 def add_match_all(df):
     df_match_all = deepcopy(df)
     df_match_all["match"] = -1
@@ -56,7 +71,7 @@ def add_match_all(df):
 
 def main():
     # Loading
-    df = load_dists()
+    df = load_dists_match_set_size()
     df = add_match_all(df)
 
     # Plotting

@@ -37,3 +37,37 @@ tree . --gitignore > ./docs/tree-project.txt
 tree ./data -l > ./docs/tree-data.txt
 ```
 
+
+#### Scripts NT
+
+``` bash
+./scripts/NT/znorm_NT.py
+./scripts/NT/calc_geometrics_medians.py
+
+# ./scripts/NT/visualization/kde_8_factors.py
+# ./scripts/NT/visualization/scatter_kde.py # suitable for set-size separations
+# ./scripts/NT/visualization/umap_8_factors.py # fixme; colors, supervised
+
+# Distance from O
+./scripts/NT/distance/from_O/MTL_regions.py
+
+# Distance between geometrics medians
+./scripts/NT/distance/between_gs/MTL_regions.py
+
+./scripts/NT/distance/between_gs/calc_dist/trial.py
+./scripts/NT/distance/between_gs/calc_dist/match_set_size.py
+./scripts/NT/distance/between_gs/calc_dist/session.py
+
+# Rank
+./scripts/NT/distance/between_gs/rank_dists/to_rank_dists.py
+./scripts/NT/distance/between_gs/rank_dists/stats.py
+
+# # Set size dependency
+# ./scripts/NT/distance/between_gs/set_size_dependency/plot_box.py
+# ./scripts/NT/distance/between_gs/set_size_dependency/stats.py
+# ./scripts/NT/distance/between_gs/set_size_dependency/plot_violin.py
+
+# # Classification
+# ./scripts/NT/clf/linearSVC.py
+```
+

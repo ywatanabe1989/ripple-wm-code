@@ -1,6 +1,6 @@
 #!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-06 21:08:35 (ywatanabe)"
+# Time-stamp: "2024-10-07 19:14:18 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/between_gs/calc_dists.py
 
 """This script calculates distances between geometric medians for phases."""
