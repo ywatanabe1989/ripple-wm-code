@@ -2,83 +2,72 @@
 
 #### [Installation and download](./docs/installation.md)
 
-#### Converts the .h5 files into csv and pkl files
-```bash
-./scripts/load/nix_2_csv_and_pkl.py
-```
-
-#### Demographic data
-```bash
-./scripts/demographic/fetch_demographic_data.py
-```
-
-#### Ripple Detection
-```bash
-./scripts/ripple/detect_SWR_p.py
-./scripts/ripple/define_SWR_m.py
-# ./scripts/ripple/UMAP_for_defining_putative_CA1.py
-```
-
-#### Neural trajectory (NT) calculation with GPFA
-```bash
-find data -name '*NT*' | xargs rm -rf
-./scripts/NT/calc_NT_with_GPFA.py
-./scripts/NT/znorm_NT.py
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### Wavelet transformation
+#### Data
 
 ``` bash
-./scripts/calc_wavelet.py
+./data
+mv ./data ./.data_bak
+ln -sf ../scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM/data_nix ./data/data_nix
+```
+
+#### Cuda
+
+``` bash
+~/.bin/nvidia-install-nvidia-driver
+~/.bin/nvidia-install-cuda
+~/.bin/nvidia-check-cuda 2> /dev/null | grep -i "is cuda available" # True
+```
+
+#### Scripts
+```bash
+~/.bin/cleanup_directory.sh ./data
+./scripts/load/all.sh
+./scripts/demographic/all.sh
+./scripts/GPFA/all.sh
+./scripts/NT/all.sh
+./scripts/ripple/all.sh
+./scripts/memory_load/all.sh
 ```
 
 
+#### Project Structure
 
-
-
-
-
-
-
-./EDA/check_ripples/
-./EDA/check_ripples/unit_firing_patterns/
-./EDA/check_ripples/unit_firing_patterns/trajectory/
-
-
-#### Distance between phases
-```
-./EDA/check_ripples/unit_firing_patterns/trajectory/peri_SWR_dist_from_P_dev.py
+``` bash
+tree . --gitignore > ./docs/tree-project.txt
+tree ./data -l > ./docs/tree-data.txt
 ```
 
-#### Representative Trajectory of Subject 06, Session 02
+
+#### Scripts NT
+
+``` bash
+./scripts/NT/znorm_NT.py
+./scripts/NT/calc_geometrics_medians.py
+
+# ./scripts/NT/visualization/kde_8_factors.py
+# ./scripts/NT/visualization/scatter_kde.py # suitable for set-size separations
+# ./scripts/NT/visualization/umap_8_factors.py # fixme; colors, supervised
+
+# Distance from O
+./scripts/NT/distance/from_O/MTL_regions.py
+
+# Distance between geometrics medians
+./scripts/NT/distance/between_gs/MTL_regions.py
+
+./scripts/NT/distance/between_gs/calc_dist/trial.py
+./scripts/NT/distance/between_gs/calc_dist/match_set_size.py
+./scripts/NT/distance/between_gs/calc_dist/session.py
+
+# Rank
+./scripts/NT/distance/between_gs/rank_dists/to_rank_dists.py
+./scripts/NT/distance/between_gs/rank_dists/stats.py
+
+# Set size dependency
+./scripts/NT/distance/between_gs/set_size_dependency/plot_box.py
+# ./scripts/NT/distance/between_gs/set_size_dependency/stats.py
+# ./scripts/NT/distance/between_gs/set_size_dependency/plot_violin.py
+
+# # Classification
+# ./scripts/NT/clf/linearSVC.py
 ```
-./EDA/check_ripples/unit_firing_patterns/trajectory/repr_traj.py
-./res/figs/scatter/repr_traj/session_traj_Subject_06_Session_02.csv
-```
-
-#### Representative Trajectory of Subject 06, Session 02 by condition
-```
-./EDA/check_ripples/unit_firing_patterns/trajectory/repr_traj_by_set_size_and_task_type.py 
-./res/figs/scatter/repr_traj/
-
-./EDA/check_ripples/unit_firing_patterns/trajectory/classify_trajectories.py 
-
-
-```
-
 

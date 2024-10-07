@@ -1,19 +1,32 @@
-PHASES:
-  ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+TASK:
+  - match:
+      1
+    set_size:
+      4
+  - match:
+      1
+    set_size:
+      6
+  - match:
+      1
+    set_size:
+      8
+  - match:
+      2
+    set_size:
+      4
+  - match:
+      2
+    set_size:
+      6
+  - match:
+      2
+    set_size:
+      8
 
-PHASES_COLORS:
-    ["black", "blue", "green", "red"]
+MATCHES: [1,2]
 
-PHASES_DUR_SEC:
-  [1, 2, 3, 2]
+MATCHES_STR:
+  {"1": Match IN, "2": Mismatch OUT, "all": Match ALL}
 
-PHASES_BIN_INDI:
-  {
-  "Fixation": [0, 20],
-  "Encoding": [20, 60],
-  "Maintenance": [60, 120],
-  "Retrieval": [120, 160],
-  }
-
-TRIAL_SEC:
-  8
+SET_SIZES: [4,6,8]

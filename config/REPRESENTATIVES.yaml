@@ -1,0 +1,25 @@
+# REPRESNTATIVE_SUBJECT:
+#   06
+
+# REPRESNTATIVE_SESSION:
+#   02
+
+# REPRESNTATIVE_TRIAL:
+#   05
+
+# REPRESNTATIVE_ROI:
+#   AHL
+
+
+# REPRESENTATIVE:
+#   '{"sub": "06", "session": "02", "trial": "05", "roi": "AHL"}'
+
+REPRESENTATIVE:
+  sub:
+    "06"
+  session:
+    "02"
+  trial:
+    "05"
+  roi:
+    "AHL"

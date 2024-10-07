@@ -1,23 +1,13 @@
-RIPPLE_LOW_HZ:
-  80
+FS:
+  iEEG:
+    2000
+  EEG:
+    200
+  NT:
+    '(CONFIG.GPFA.BIN_SIZE_MS * 1e-3)'
 
-RIPPLE_HIGH_HZ:
-  140
+# FS_iEEG:
+#   2000
 
-RIPPLE_BANDS:
-  [[ 80, 140]]
-
-RIPPLE_THRESHOLD_SD:
-  2.0
-
-RIPPLE_MIN_DURATION_MS:
-  10
-
-FS_iEEG:
-  2000
-
-FS_EEG:
-  200
-
-iEEG_ROIS:
-  ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]
+# FS_EEG:
+#   200

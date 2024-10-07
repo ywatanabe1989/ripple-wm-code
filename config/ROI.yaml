@@ -1,0 +1,72 @@
+ROI:
+  ALL: ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]
+
+  MTL:
+    HIP: ["AHL", "AHR", "PHL", "PHR"]
+    EC: ["ECL", "ECR"]
+    AMY: ["AL", "AR"]    
+
+  CA1:
+    - sub: "01"
+      session: "01"
+      roi: "AHL"
+
+    - sub: "01"
+      session: "02"
+      roi: "AHL"
+
+    - sub: "03"
+      session: "01"
+      roi: "AHR"
+
+    - sub: "03"
+      session: "02"
+      roi: "AHR"
+
+    - sub: "04"
+      session: "01"
+      roi: "PHL"
+
+    - sub: "04"
+      session: "02"
+      roi: "PHL"
+
+    - sub: "06"
+      session: "01"
+      roi: "AHL"
+
+    - sub: "06"
+      session: "02"
+      roi: "AHL"
+
+    - sub: "09"
+      session: "01"
+      roi: "AHR"
+
+    - sub: "09"
+      session: "02"
+      roi: "AHR"
+
+
+
+
+# ROIS:
+#     HIP:
+#       ["AHL", "AHR", "PHL", "PHR"]
+
+#     AMY:
+#       ["AL", "AR"]
+
+#     EC:
+#       ["ECL", "ECR"]
+
+# PUTATIVE_CA1:
+#   {"01": "AHL",
+#    "03": "AHR",
+#    "04": "PHL",
+#    "06": "AHL",
+#    "09": "AHR",
+#   }
+
+# # iEEG_ROIS:
+# #   ["AHL", "AHR", "PHL", "PHR", "ECL", "ECR", "AL", "AR"]

@@ -1,0 +1,15 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Run Scripts') {
+            steps {
+                sh '../scripts/load/all.sh'
+                sh '../scripts/demographic/all.sh'
+                // sh '../scripts/ripple/all.sh'
+                // sh '../scripts/GPFA/all.sh'
+                // sh '../scripts/NT/all.sh'
+                // sh '../scripts/memory_load/all.sh'
+            }
+        }
+}

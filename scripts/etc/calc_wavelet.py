@@ -1,4 +1,4 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
 # Time-stamp: "2024-05-29 13:45:22 (ywatanabe)"
 # calc_wavelet.py

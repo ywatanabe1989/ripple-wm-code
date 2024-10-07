@@ -1,0 +1,67 @@
+DIR:
+  SUBJECT:
+    f"./data/Sub_{sub}/"
+
+  SESSION:
+    f"./data/Sub_{sub}/Session_{session}/"
+
+PATH:
+  TRIALS_INFO:
+    f"./data/Sub_{sub}/Session_{session}/trials_info.csv"
+
+  SPIKE_TIMES:
+    f"./data/Sub_{sub}/Session_{session}/spike_times/{roi}.pkl"
+
+  iEEG:
+    f"./data/Sub_{sub}/Session_{session}/iEEG/{roi}.pkl"
+
+  iEEG_WAVELET:
+    f"./data/Sub_{sub}/Session_{session}/iEEG_wavelet/{roi}.pkl"
+    
+  iEEG_RIPPLE_BAND:
+    f"./data/Sub_{sub}/Session_{session}/iEEG_ripple_preprocessed/{roi}.pkl"
+
+  RIPPLE:
+    f"./data/Sub_{sub}/Session_{session}/SWR_p/{roi}.pkl"
+
+  RIPPLE_WITH_NT:
+    f"./data/Sub_{sub}/Session_{session}/SWR_p/{roi}_with_NT.pkl"
+    
+  RIPPLE_MINUS:
+    f"./data/Sub_{sub}/Session_{session}/SWR_m/{roi}.pkl"
+
+  RIPPLE_MINUS_WITH_NT:
+    f"./data/Sub_{sub}/Session_{session}/SWR_m/{roi}_with_NT.pkl"
+    
+  NT:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all.npy"
+
+  NT_Z:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session.npy"
+
+  NT_GS_TRIAL:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_trial.pkl"
+
+  NT_GS_MATCH_SET_SIZE:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_match_set_size.csv"
+    
+  NT_GS_SESSION:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/gs_session.csv"
+    
+  NT_DIST_FROM_G:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/from_g.csv"
+
+  NT_DIST_BETWEEN_GS_TRIAL:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_trial.pkl"
+
+  NT_DIST_BETWEEN_GS_MATCH_SET_SIZE:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_match_set_size.csv"
+    
+  NT_DIST_BETWEEN_GS_SESSION:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/dist/between_gs_session.csv"
+    
+  NT_BARCODE:
+    f"./data/Sub_{sub}/Session_{session}/NT/{roi}_match_all_z_by_session/TDA/barcode.csv"
+
+  SCATTER:
+    f"./data/CA1/NT/linear/orig/{sample_type}/sub-{sub}_session-{session}_roi-{roi}.csv"

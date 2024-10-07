@@ -1,0 +1,3 @@
+[submodule "scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM"]
+	path = scripts/externals/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM
+	url = ssh://git@gin.g-node.org:22/USZ_NCH/Human_MTL_units_scalp_EEG_and_iEEG_verbal_WM

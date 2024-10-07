@@ -1,64 +1,24 @@
-#!./env/bin/python3
+#!./.env/bin/python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-06-27 20:48:45 (ywatanabe)"
+# Time-stamp: "2024-09-23 23:25:18 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/demographic/electrode_positions.py
 
 
-"""
-This script does XYZ.
-"""
+"""This script processes demographic data, including subject information, sessions, and ROIs."""
 
 
-"""
-Imports
-"""
+"""Imports"""
 import os
 import re
 import sys
-
-import matplotlib
 import matplotlib.pyplot as plt
 import mngs
-import seaborn as sns
-
-mngs.gen.reload(mngs)
-import warnings
 from collections import OrderedDict
-from glob import glob
 from pprint import pprint
-
-import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import xarray as xr
-from icecream import ic
-from natsort import natsorted
-from tqdm import tqdm
-
-# sys.path = ["."] + sys.path
-# from scripts import utils, load
-
-"""
-Warnings
-"""
-# warnings.simplefilter("ignore", UserWarning)
-
-
-"""
-Config
-"""
-# CONFIG = mngs.gen.load_configs()
-
-
-"""
-Functions & Classes
-"""
-import os
-import re
 from collections import defaultdict
 
+"""Functions & Classes"""
 
 def find_subjects(subject_dirs):
     subjects = []
@@ -136,13 +96,13 @@ def main():
     out = OrderedDict()
 
     # Subjects
-    out["SUBJECTS"] = find_subjects(mngs.gen.natglob(CONFIG["DIR_SUBJECT"]))
+    out["SUBJECTS"] = find_subjects(mngs.io.glob(CONFIG.DIR.SUBJECT))
 
     # Sessions
-    out["SESSIONS"] = find_sessions(mngs.gen.natglob(CONFIG["DIR_SESSION"]))
+    out["SESSIONS"] = find_sessions(mngs.io.glob(CONFIG.DIR.SESSION))
 
     # ROIs
-    out["ROIS"] = find_rois(mngs.gen.natglob(CONFIG["PATH_iEEG"]))
+    out["ROIS"] = find_rois(mngs.io.glob(CONFIG.PATH.iEEG))
 
     # Prints
     pprint(out)
@@ -152,18 +112,10 @@ def main():
 
     # Saving
     mngs.io.save(out, "./config/demographic_data.yaml", from_cwd=True)
-    mngs.io.save(df, "./demographic_data.csv", from_cwd=False)
+    mngs.io.save(df, "./data/demographic/demographic.csv", from_cwd=True)
 
 
 if __name__ == "__main__":
-    # # Argument Parser
-    # import argparse
-    # parser = argparse.ArgumentParser(description='')
-    # parser.add_argument('--var', '-v', type=int, default=1, help='')
-    # parser.add_argument('--flag', '-f', action='store_true', default=False, help='')
-    # args = parser.parse_args()
-
-    # Main
     CONFIG, sys.stdout, sys.stderr, plt, CC = mngs.gen.start(
         sys, plt, verbose=False
     )

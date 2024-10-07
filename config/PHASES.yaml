@@ -1,0 +1,90 @@
+PHASES:
+  "Fixation":
+    color:
+      "gray"
+    dur_sec:
+      1
+    start:
+      0
+    end:
+      20
+    mid:
+      10
+    mid_start:
+      5
+    mid_end:
+      15
+  "Encoding":
+    color:
+      "blue"
+    dur_sec:
+      2
+    start:
+      20
+    end:
+      60
+    mid:
+      40
+    mid_start:
+      35
+    mid_end:
+      45
+  "Maintenance":
+    color:
+      "green"
+    dur_sec:
+      3
+    start:
+      60
+    end:
+      120
+    mid:
+      80
+    mid_start:
+      75
+    mid_end:
+      85
+  "Retrieval":
+    color:
+      "red"
+    dur_sec:
+      2
+    start:
+      120
+    end:
+      160
+    mid:
+      140
+    mid_start:
+      135
+    mid_end:
+      145
+
+
+
+# # PHASES:
+# #   ["Fixation", "Encoding", "Maintenance", "Retrieval"]
+
+# PHASES_COLORS:
+#   {
+#   "Fixation": "gray",
+#   "Encoding": "blue",
+#   "Maintenance": "green",
+#   "Retrieval": "red",
+#   }
+
+# PHASES_DUR_SEC:
+#   {
+#   "Fixation": 1,
+#   "Encoding": 2,
+#   "Maintenance": 2,
+#   "Retrieval": 2,
+#   }
+
+# PHASES_BIN_RANGE:
+#   {
+#   "Fixation": [0, 20],
+#   "Encoding": [20, 60],
+#   "Maintenance": [60, 120],
+#   "Retrieval": [120, 160],
+#   }

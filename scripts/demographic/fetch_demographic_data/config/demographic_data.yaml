@@ -52,18 +52,14 @@
             - '02'
             - '03'
             - '04'
-            - '05'
         '09':
             - '01'
             - '02'
     - ROIS:
         '01':
             - AHL
-            - AHR
             - AL
-            - AR
             - ECL
-            - ECR
             - PHL
             - PHR
         '02':
@@ -79,11 +75,8 @@
             - AHL
             - AHR
             - AL
-            - AR
             - ECL
-            - ECR
             - PHL
-            - PHR
         '04':
             - AHL
             - AHR
@@ -95,12 +88,7 @@
             - PHR
         '05':
             - AHL
-            - AHR
             - AL
-            - AR
-            - ECL
-            - ECR
-            - PHL
             - PHR
         '06':
             - AHL
