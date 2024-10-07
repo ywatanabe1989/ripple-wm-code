@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-07 20:43:40 (ywatanabe)"
+# Time-stamp: "2024-10-07 20:56:16 (ywatanabe)"
 # /mnt/ssd/ripple-wm-code/scripts/NT/distance/from_O_of_MTL_regions.py
 
 """This script does XYZ."""
@@ -69,7 +69,7 @@ def main():
             indi_match = df.match == match_str
 
             ax.sns_boxplot(
-                df[indi_MTL * indi_match],
+                data=df[indi_MTL * indi_match],
                 x="phase_combination",
                 y="distance",
                 hue="set_size",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-07 17:49:42 (ywatanabe)"
+# Time-stamp: "2024-10-07 23:29:42 (ywatanabe)"
 # set_size_dependency_stats.py
 
 """
@@ -14,39 +14,25 @@ Prerequisites:
     - mngs package, scipy, pandas, numpy
 """
 
+
 """Imports"""
 import sys
-from typing import List, Tuple, Dict, Any, Union, Sequence, Optional, Literal
+from mngs.typing import List, Tuple, Dict, Any, Union, Sequence, Literal, Optional, Iterable, ArrayLike
 
 import numpy as np
 import pandas as pd
-import torch
 
 import matplotlib.pyplot as plt
-import xarray as xr
 from copy import deepcopy
 import mngs
 from functools import partial
-try:
-    from scripts import utils
-except ImportError:
-    pass
-from scripts.NT.distance.between_gs._set_size_dependency_stats_helper import (
+from scripts import utils
+from scripts.NT.distance.between_gs.set_size_dependency._stats_helper import (
     run_kruskal_wallis,
     run_brunner_munzel,
     run_corr_test,
     sort_columns,
-    )
-
-ArrayLike = Union[
-    List,
-    Tuple,
-    np.ndarray,
-    pd.Series,
-    pd.DataFrame,
-    xr.DataArray,
-    torch.Tensor,
-]
+)
 
 """Parameters"""
 # CONFIG = mngs.gen.load_configs()
@@ -89,11 +75,8 @@ def load_NT_dist_between_gs_match_set_size_all() -> pd.DataFrame:
         dfs[mtl]["MTL"] = mtl
 
     df = pd.concat(dfs.values())
-
+    df.match = df.match.replace(CONFIG.MATCHES_STR)
     return df
-
-
-
 
 
 def run_stats(df: pd.DataFrame, scale: Optional[str] = "linear") -> Dict[str, pd.DataFrame]:
@@ -138,18 +121,15 @@ def run_stats(df: pd.DataFrame, scale: Optional[str] = "linear") -> Dict[str, pd
         ("corr-spearman", partial(run_corr_test, test="spearman")),
         ("corr-pearson", partial(run_corr_test, test="pearson")),
     ]:
+
         # Stats
         _df = deepcopy(df_copy)
         stats, _surrogate = run_fn(_df)
-        stats = stats.dropna(subset=["p_value"])
+
+        # stats = stats.dropna(subset=["p_value"])
         stats = mngs.stats.fdr_correction(stats)
         stats = mngs.stats.p2stars(stats)
         stats = mngs.pd.round(stats)
-
-        # Decoding match
-        match_mapper = deepcopy(CONFIG.MATCHES_STR)
-        match_mapper["-1"] = match_mapper.pop("all")
-        stats["match"] = stats["match"].astype(float).astype(int).astype(str).replace(match_mapper)
 
         # Sorting
         stats = sort_columns(stats)
@@ -165,15 +145,6 @@ def run_stats(df: pd.DataFrame, scale: Optional[str] = "linear") -> Dict[str, pd
 
 def main():
     df = load_NT_dist_between_gs_match_set_size_all()
-    # df = mngs.pd.melt_cols(df, cols=["FE", "FM", "FR", "EM", "ER", "MR"])
-    # df = df.rename(
-    #     columns={"variable": "phase_combination", "value": "distance"}
-    # )
-
-    # Adds Match ALL
-    df_match_all = deepcopy(df)
-    df_match_all["match"] = -1 # "Match ALL"
-    df = pd.concat([df, df_match_all])
 
     # Run statistical tests
     linear_stats = run_stats(df, scale="linear")
@@ -187,22 +158,6 @@ def main():
 
     for test_name, df in log10_stats.items():
         mngs.io.save(df, f"stats_{test_name}_log10.csv")
-
-    # # Check if log transformation does not affect KW results
-    # verify_kw_consistency(linear_stats, log10_stats)
-
-
-# def verify_kw_consistency(linear_stats, log10_stats):
-#     numeric_columns = linear_stats['kw'].select_dtypes(include=[np.number]).columns
-#     for col in numeric_columns:
-#         if not np.allclose(linear_stats['kw'][col], log10_stats['kw'][col]):
-#             print(f"Inconsistency in column: {col}")
-#             print("Linear values:", linear_stats['kw'][col].head())
-#             print("Log10 values:", log10_stats['kw'][col].head())
-#             print("Difference:", (linear_stats['kw'][col] - log10_stats['kw'][col]).head())
-#         else:
-#             print(f"Column {col} is consistent")
-#     print("Verification complete.")
 
 
 

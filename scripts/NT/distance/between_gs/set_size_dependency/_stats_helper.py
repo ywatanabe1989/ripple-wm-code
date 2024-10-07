@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Time-stamp: "2024-10-07 17:37:24 (ywatanabe)"
+# Time-stamp: "2024-10-07 23:29:25 (ywatanabe)"
 # _set_size_dependency_stats_helper.py
 
 """
@@ -118,8 +118,9 @@ def run_kruskal_wallis(df: pd.DataFrame) -> pd.DataFrame:
                     & (df["phase_combination"] == phase_combi)
                     & (df["match"] == match)
                 ].dropna(subset=["distance"])
+
                 groups = [
-                    subset[subset["set_size"] == size]["distance"]
+                    subset[subset["set_size"] == str(size)]["distance"]
                     for size in [4, 6, 8]
                 ]
 
@@ -172,14 +173,9 @@ def run_brunner_munzel(df: pd.DataFrame) -> pd.DataFrame:
                     & (df["match"] == match)
                 ].dropna(subset=["distance"])
                 for size1, size2 in itertools.combinations([4, 6, 8], 2):
-                    xx = subset[subset["set_size"] == size1]["distance"]
-                    yy = subset[subset["set_size"] == size2]["distance"]
+                    xx = subset[subset["set_size"] == str(size1)]["distance"]
+                    yy = subset[subset["set_size"] == str(size2)]["distance"]
                     if len(xx) > 0 and len(yy) > 0:
-                        # statistic, p_value = stats.brunnermunzel(xx, yy)
-                        # effect_size = abs(np.mean(xx) - np.mean(yy)) / np.sqrt(
-                        #     (np.var(xx) + np.var(yy)) / 2
-                        # )
-                        # effect_size = calculate_cles(xx, yy)
                         bm_out = mngs.stats.brunner_munzel_test(xx, yy)
                         results.append(
                             {
@@ -188,12 +184,6 @@ def run_brunner_munzel(df: pd.DataFrame) -> pd.DataFrame:
                                 "match": match,
                                 "comparison": f"{size1}vs{size2}",
                                 **bm_out,
-                                # "statistic": statistic,
-                                # "p_value": p_value,
-                                # "effect_size": effect_size,
-                                # "sample_sizes": [len(xx), len(yy)],
-                                # "dof": len(xx) + len(yy) - 2,
-                                # "test_name": "Brunner-Munzel test",
                             }
                         )
     return pd.DataFrame(results), None
@@ -268,5 +258,7 @@ def sort_columns(stats):
         [mngs.gen.search(key, stats["MTL"])[0] for key in mtl_order]
     )
     stats = stats.iloc[indi]
+
+    stats = stats.reset_index().drop(columns="index")
 
     return stats

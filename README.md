@@ -62,8 +62,8 @@ tree ./data -l > ./docs/tree-data.txt
 ./scripts/NT/distance/between_gs/rank_dists/to_rank_dists.py
 ./scripts/NT/distance/between_gs/rank_dists/stats.py
 
-# # Set size dependency
-# ./scripts/NT/distance/between_gs/set_size_dependency/plot_box.py
+# Set size dependency
+./scripts/NT/distance/between_gs/set_size_dependency/plot_box.py
 # ./scripts/NT/distance/between_gs/set_size_dependency/stats.py
 # ./scripts/NT/distance/between_gs/set_size_dependency/plot_violin.py
 
